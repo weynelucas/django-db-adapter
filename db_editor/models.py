@@ -7,10 +7,10 @@ def is_allowed_backend():
     """
     Check if connection is from allowed backend
     """
-    from django.db import connection
-
     if '*' in settings.ALLOWED_BACKENDS:
         return True
+
+    from django.db import connection
     
     backend = connection         \
         .settings_dict['ENGINE'] \
