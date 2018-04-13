@@ -1,16 +1,18 @@
-from django.conf import settings
 from django.db import connection
 from django.db.models.signals import class_prepared, pre_init, post_init
 
-from intmed_framework.utils import db_options
+from .config import settings
 
 
-def add_db_prefix(sender, **kwargs):
+def add_db_table_prefix(sender, **kwargs):
+    """
+    Add prefix for all configured models 
+    """
     if not db_options.is_valid_vendor():
         return
 
-    prefix = db_options.get_prefix('table')
-    owner = getattr(settings, 'DB_SCHEMA') or ''
+    prefix = settings.PREFIX['TABLE']
+    owner = settings.SCHEMA
     
     if owner:
         owner = owner + '.'
@@ -30,4 +32,4 @@ def add_db_prefix(sender, **kwargs):
         sender._meta.db_table = owner + prefix + sender._meta.db_table
 
 
-class_prepared.connect(add_db_prefix)
+class_prepared.connect(add_db_table_prefix)
