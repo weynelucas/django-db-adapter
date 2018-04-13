@@ -1,18 +1,34 @@
-from django.db import connection
 from django.db.models.signals import class_prepared, pre_init, post_init
 
 from .config import settings
+
+
+def is_allowed_backend():
+    """
+    Check if connection is from allowed backend
+    """
+    from django.db import connection
+
+    if '*' in settings.ALLOWED_BACKENDS:
+        return True
+    
+    backend = connection         \
+        .settings_dict['ENGINE'] \
+        .split('.')[-1]          \
+        .decode()                
+
+    return backend in settings.ALLOWED_BACKENDS
 
 
 def add_db_table_prefix(sender, **kwargs):
     """
     Add prefix for all configured models 
     """
-    if not db_options.is_valid_vendor():
+    if not is_allowed_backend():
         return
 
-    prefix = settings.PREFIX['TABLE']
     owner = settings.SCHEMA
+    prefix = settings.PREFIX.get('TABLE')
     
     if owner:
         owner = owner + '.'

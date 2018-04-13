@@ -1,9 +1,15 @@
+from django.db import connection
 from django.conf import settings
+
 
 # Database editor options
 DB_EDITOR = getattr(settings, 'DB_EDITOR', {})
+
 # Schema (database owner)
 SCHEMA = DB_EDITOR.get('SCHEMA', None)
+
+# Accepted backends for non oracle database actions
+ALLOWED_BACKENDS = DB_EDITOR.get('ALLOW_BACKENDS', ['*'])
 
 # Map between object type and prefix
 DEFAULT_PREFIX = {
