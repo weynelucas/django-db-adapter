@@ -6,7 +6,7 @@ from django.conf import settings
 DB_EDITOR = getattr(settings, 'DB_EDITOR', {})
 
 # Schema (database owner)
-SCHEMA = DB_EDITOR.get('SCHEMA', None)
+SCHEMA = DB_EDITOR.get('SCHEMA', '')
 
 # Accepted backends for non oracle database actions
 ALLOWED_BACKENDS = DB_EDITOR.get('ALLOW_BACKENDS', ['*'])

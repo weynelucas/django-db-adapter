@@ -12,10 +12,15 @@ class DatabaseSchemaEditor(schema.DatabaseSchemaEditor):
     }
 
     def _get_index_name_prefix(self, suffix=''):
-        for pattern in self.prefix_type_map.keys():
-            if suffix.startswith(pattern):
-                return db_options.get_prefix(self.prefix_type_map[pattern])
-        return db_options.get_prefix(self.prefix_type_map['default'])
+        has_pattern = any(
+            suffix.startswith(pattern) 
+            for pattern in self.prefix_type_map.keys()
+        )
+        return settings.PREFIX.get(
+            self.prefix_type_map[pattern] 
+            if has_pattern
+            else self.prefix_type_map['default']
+        )
 
     def _normalize_index_name(self, index_name, suffix=''):
         # Remove table prefix from object
