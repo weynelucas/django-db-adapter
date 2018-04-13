@@ -35,5 +35,5 @@ class DatabaseOperations(operations.DatabaseOperations):
     def _get_sequence_name(self, table):
         return self._get_operation_name(
             table=table,
-            prefix=settings.PREFIX('SEQUENCE')
+            prefix=settings.PREFIX.get('SEQUENCE')
         )
