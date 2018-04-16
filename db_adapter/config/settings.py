@@ -3,13 +3,13 @@ from django.conf import settings
 
 
 # Database editor options
-DB_EDITOR = getattr(settings, 'DB_EDITOR', {})
+DB_ADAPTER = getattr(settings, 'DB_ADAPTER', {})
 
 # Schema (database owner)
-SCHEMA = DB_EDITOR.get('SCHEMA', '')
+SCHEMA = DB_ADAPTER.get('SCHEMA', '')
 
 # Accepted backends for non oracle database actions
-ALLOWED_BACKENDS = DB_EDITOR.get('ALLOW_BACKENDS', ['*'])
+ALLOWED_BACKENDS = DB_ADAPTER.get('ALLOW_BACKENDS', ['*'])
 
 # Map between object type and prefix
 DEFAULT_PREFIX = {
@@ -22,5 +22,5 @@ DEFAULT_PREFIX = {
 }
 PREFIX = {
     **DEFAULT_PREFIX,
-    **DB_EDITOR.get('PREFIX', {}),
+    **DB_ADAPTER.get('PREFIX', {}),
 }

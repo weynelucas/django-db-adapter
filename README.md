@@ -1,8 +1,10 @@
-# django-db-editor
+[![PyPi version](https://img.shields.io/pypi/v/django-db-adapter.svg)](https://pypi.python.org/pypi/django-db-adapter)
+
+# django-db-adapter
 A configurable database backend for Oracle
 
 ## Requirements
-django-db-editor was tested with the following requirements:
+django-db-adapter was tested with the following requirements:
 
 - [Python](https://www.python.org/) (3+)
 - [Django](https://docs.djangoproject.com/) (1.11)
@@ -15,29 +17,29 @@ The following packages are optional:
 Install using pip, including any optional packages you want...
 
 ```
-pip install django-db-editor
+pip install django-db-adapter
 ```
 
 ...or clone the project from github.
 
 ```
-git clone https://github.com/weynelucas/django-db-editor.git
+git clone https://github.com/weynelucas/django-db-adapter.git
 ```
 
-Add `'db_editor'` at the top of your `INSTALLED_APPS` setting.
+Add `'db_adapter'` at the top of your `INSTALLED_APPS` setting.
 
 ```python
 INSTALLED_APPS = (
     ...,
-    'db_editor'
+    'db_adapter'
 )
 ```
 
 ## Quickstart
-Any global settings for a django-db-editor are kept in a single configuration dictionary named `DB_EDITOR`
+Any global settings for a django-db-adapter are kept in a single configuration dictionary named `DB_ADAPTER`
 
 ```python
-DB_EDITOR = {
+DB_ADAPTER = {
     'SCHEMA': 'CONN_ORCL',
     'ALLOWED_BACKENDS': ['oracle'],
     'PREFIX': {
@@ -51,12 +53,12 @@ DB_EDITOR = {
 }
 ```
 
-You must setting the connection parameter `ENGINE` from `DATABASES` with the custom oracle database backend to apply your `DB_EDITOR` settings.
+You must setting the connection parameter `ENGINE` from `DATABASES` with the custom oracle database backend to apply your `DB_ADAPTER` settings.
 
 ```python
 DATABASES = {
     'default': {
-        'ENGINE': 'db_editor.db.backends.oracle',
+        'ENGINE': 'db_adapter.db.backends.oracle',
         'NAME': 'mydatabase',
         'USER': 'mydatabaseuser',
         'PASSWORD': 'mypassword',
@@ -67,12 +69,12 @@ DATABASES = {
 ```
 
 ## Settings
-Configuration for django-db-editor is all namespaced inside a single Django setting, named `DB_EDITOR`.
+Configuration for django-db-adapter is all namespaced inside a single Django setting, named `DB_ADAPTER`.
 
-If you need to access the values of `db_editor` settings in your project, you should use the `settings` object. For example.
+If you need to access the values of `db_adapter` settings in your project, you should use the `settings` object. For example.
 
 ```python
-from db_editor.config import settings
+from db_adapter.config import settings
 
 print settings.SCHEMA
 print settings.PREFIX['TABLE']
@@ -126,3 +128,4 @@ END;
 ## Release Notes
 
 - 1.0.0 - 16/04/2018 - First release
+- 1.0.1 - 16/04/2018 - Rename package and fix setup issues
