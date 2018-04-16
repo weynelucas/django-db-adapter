@@ -93,7 +93,7 @@ List of database backends names allowed to perform non-oracle actions. Add table
 Options are: `'mysql'`, `'oracle'`, `'postgresql'`, `'postgresql_psycopg2'`, `'sqlite'` or `*` for allow all backends to perform non-oracle actions
 
 
-### PREFIX
+#### `PREFIX`
 **Default:**
 ```python
 {
@@ -122,3 +122,10 @@ BEGIN
 END;
 /;
 ```
+
+
+## Commands
+
+### `sqlmigrateall`
+Command to perform [`sqlmigrate`](https://docs.djangoproject.com/en/2.0/ref/django-admin/#sqlmigrate) for all migrations configured in your project. This command saves all SQL commands into a folder
+
