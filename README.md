@@ -81,13 +81,44 @@ print settings.PREFIX['TABLE']
 ### Global settings
 
 #### `SCHEMA`
-Default: `None`
+**Default:**  `None`
 
-String with user schema name of you database connection.
+String with user schema name of you database connection. This value will be appended to all database queries.
 
 #### `ALLOWED_BACKENDS`
-Default: `[ '*' ]`
+**Default:** `[ '*' ]`
 
-List of database backends names allowed to perform non-oracle actions. Table prefixes and the command `sqlmigrateall` does not require a oracle backend, but is possible. Options are: `'mysql'`, `'oracle'`, `'postgresql'`, `'postgresql_psycopg2'`, `'sqlite'` or `*` for allow all backends
+List of database backends names allowed to perform non-oracle actions. Add table prefixes and the command `sqlmigrateall` are actions that not require a oracle backend. If a backend are not present on list, theese action will not be performed.
+
+Options are: `'mysql'`, `'oracle'`, `'postgresql'`, `'postgresql_psycopg2'`, `'sqlite'` or `*` for allow all backends to perform non-oracle actions
 
 
+### PREFIX
+**Default:**
+```python
+{
+    'TABLE': 'tb_',
+    'FOREIGN_KEY': 'fk_',
+    'INDEX': 'ix_',
+    'UNIQUE': 'uniq_',
+    'TRIGGER': 'tg_',
+    'SEQUENCE': 'sq_'
+}
+```
+
+Default prefix mapping for all database objects. This configuration allow backend to create DDL commands applying theese prefixes for each database object. 
+
+```sql
+CREATE TABLE "TB_PERSON" ("ID" NUMBER(11) NOT NULL PRIMARY KEY, "NAME" NVARCHAR2(255) NULL);
+
+DECLARE
+    i INTEGER;
+BEGIN
+    SELECT COUNT(1) INTO i FROM USER_SEQUENCES
+        WHERE SEQUENCE_NAME = 'SQ_PERSON';
+    IF i = 0 THEN
+        EXECUTE IMMEDIATE 'CREATE SEQUENCE "SQ_PERSON"';
+    END IF;
+END;
+/;
+```
