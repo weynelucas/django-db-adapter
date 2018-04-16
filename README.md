@@ -1,3 +1,5 @@
+[![PyPi version](https://img.shields.io/pypi/v/django-db-adapter.svg)](https://pypi.python.org/pypi/django-db-adapter)
+
 # django-db-adapter
 A configurable database backend for Oracle
 
