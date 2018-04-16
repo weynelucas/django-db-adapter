@@ -12,13 +12,13 @@ class DatabaseSchemaEditor(schema.DatabaseSchemaEditor):
     }
 
     def _get_index_name_prefix(self, suffix=''):
-        has_pattern = any(
-            suffix.startswith(pattern) 
-            for pattern in self.prefix_type_map.keys()
-        )
+        pattern = list(filter(
+            lambda p: suffix.startswith(p) 
+            self.prefix_type_map.keys()
+        ))
         return settings.PREFIX.get(
-            self.prefix_type_map[pattern] 
-            if has_pattern
+            self.prefix_type_map[pattern[0]] 
+            if pattern
             else self.prefix_type_map['default']
         )
 
