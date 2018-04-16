@@ -9,7 +9,7 @@ django-db-editor was tested with the following requirements:
 - [cx_Oracle](http://cx-oracle.readthedocs.io/en/latest/) (5.2+)
 
 The following packages are optional:
-- [progressbar2](https://pypi.python.org/pypi/progressbar2) (3.34.0+) - Used only to display progress on `sqlmigrateall` command
+- [progressbar2](https://pypi.python.org/pypi/progressbar2) (3.34.0+) - Used only to display progress during `sqlmigrateall` command
 
 ## Installation
 Install using pip, including any optional packages you want...

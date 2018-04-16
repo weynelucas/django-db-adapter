@@ -14,7 +14,7 @@ django-db-editor was tested with the following requirements:
 
 The following packages are optional: 
 
-- `progressbar2`_ (3.34.0+) - Used only to display progress on ``sqlmigrateall`` command
+- `progressbar2`_ (3.34.0+) - Used only to display progress during ``sqlmigrateall`` command
 
 Installation
 ------------
