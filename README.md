@@ -122,19 +122,3 @@ BEGIN
 END;
 /;
 ```
-
-
-## Commands
-
-### `sqlmigrateall`
-Command to perform [`sqlmigrate`](https://docs.djangoproject.com/en/2.0/ref/django-admin/#sqlmigrate) for all migrations configured in your project. This command saves all SQL commands into a speciied folder separated by app.
-
-```
-python manage.py sqlmigrateall C://migrations/
-```
-
-
-`--no-folder-per-app`
-
-This optional parameter tells command to not separate the migrations by app
-
