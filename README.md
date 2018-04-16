@@ -65,3 +65,29 @@ DATABASES = {
     }
 }
 ```
+
+## Settings
+Configuration for django-db-editor is all namespaced inside a single Django setting, named `DB_EDITOR`.
+
+If you need to access the values of `db_editor` settings in your project, you should use the `settings` object. For example.
+
+```python
+from db_editor.config import settings
+
+print settings.SCHEMA
+print settings.PREFIX['TABLE']
+```
+
+### Global settings
+
+#### `SCHEMA`
+> Default: `None`
+> 
+> String with user schema name of you database connection.
+
+#### `ALLOWED_BACKENDS`
+> Default: `[ '*' ]`
+>
+> List of database backends names allowed to perform non-oracle actions. Table prefixes and the command `sqlmigrateall` does not require a oracle backend, but is possible. Options are: `'mysql'`, `'oracle'`, `'postgresql'`, `'postgresql_psycopg2'`, `'sqlite'` or `*` for allow all backends | `*` |
+
+
