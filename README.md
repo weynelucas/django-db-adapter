@@ -81,13 +81,13 @@ print settings.PREFIX['TABLE']
 ### Global settings
 
 #### `SCHEMA`
-> Default: `None`
-> 
-> String with user schema name of you database connection.
+Default: `None`
+
+String with user schema name of you database connection.
 
 #### `ALLOWED_BACKENDS`
-> Default: `[ '*' ]`
->
-> List of database backends names allowed to perform non-oracle actions. Table prefixes and the command `sqlmigrateall` does not require a oracle backend, but is possible. Options are: `'mysql'`, `'oracle'`, `'postgresql'`, `'postgresql_psycopg2'`, `'sqlite'` or `*` for allow all backends | `*` |
+Default: `[ '*' ]`
+
+List of database backends names allowed to perform non-oracle actions. Table prefixes and the command `sqlmigrateall` does not require a oracle backend, but is possible. Options are: `'mysql'`, `'oracle'`, `'postgresql'`, `'postgresql_psycopg2'`, `'sqlite'` or `*` for allow all backends
 
 
