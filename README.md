@@ -2,13 +2,13 @@
 A configurable database backend for Oracle
 
 ## Requirements
-django-db-editor was tested with the following:
+django-db-editor was tested with the following requirements:
 
-- Python (3+)
-- Django (1.11)
+- [Python](https://www.python.org/) (3+)
+- [Django](https://docs.djangoproject.com/) (1.11)
 
 The following packages are optional:
-- progressbar2 (3.34.0+) - Used only to display progress on `sqlmigrateall` command
+- [progressbar2](https://pypi.python.org/pypi/progressbar2) (3.34.0+) - Used only to display progress on `sqlmigrateall` command
 
 ## Installation
 Install using pip, including any optional packages you want...
@@ -37,7 +37,7 @@ Any global settings for a django-db-editor are kept in a single configuration di
 
 ```python
 DB_EDITOR = {
-    'SCHEMA': os.getenv('DB_SCHEMA', ''),
+    'SCHEMA': 'CONN_ORCL',
     'ALLOWED_BACKENDS': ['oracle'],
     'PREFIX': {
         'TABLE': 'tb_',
