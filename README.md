@@ -122,3 +122,7 @@ BEGIN
 END;
 /;
 ```
+
+## Release Notes
+
+- 1.0.0 - 16/04/2018 - First release
