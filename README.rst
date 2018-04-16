@@ -1,4 +1,4 @@
-django-db-editor
+django-db-adapter
 ================
 
 A configurable database backend for Oracle
@@ -6,7 +6,7 @@ A configurable database backend for Oracle
 Requirements
 ------------
 
-django-db-editor was tested with the following requirements:
+django-db-adapter was tested with the following requirements:
 
 -  `Python`_ (3+)
 -  `Django`_ (1.11)
@@ -23,13 +23,13 @@ Install using pip, including any optional packages you want…
 
 ::
 
-    pip install django-db-editor
+    pip install django-db-adapter
 
 …or clone the project from github.
 
 ::
 
-    git clone https://github.com/weynelucas/django-db-editor.git
+    git clone https://github.com/weynelucas/django-db-adapter.git
 
 Add ``'db_editor'`` at the top of your ``INSTALLED_APPS`` setting.
 
@@ -43,7 +43,7 @@ Add ``'db_editor'`` at the top of your ``INSTALLED_APPS`` setting.
 Quickstart
 ----------
 
-Any global settings for a django-db-editor are kept in a single
+Any global settings for a django-db-adapter are kept in a single
 configuration dictionary named ``DB_EDITOR``
 
 .. code:: python
