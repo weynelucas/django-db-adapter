@@ -24,20 +24,20 @@ pip install django-db-adapter
 git clone https://github.com/weynelucas/django-db-adapter.git
 ```
 
-Add `'db_editor'` at the top of your `INSTALLED_APPS` setting.
+Add `'db_adapter'` at the top of your `INSTALLED_APPS` setting.
 
 ```python
 INSTALLED_APPS = (
     ...,
-    'db_editor'
+    'db_adapter'
 )
 ```
 
 ## Quickstart
-Any global settings for a django-db-adapter are kept in a single configuration dictionary named `DB_EDITOR`
+Any global settings for a django-db-adapter are kept in a single configuration dictionary named `DB_ADAPTER`
 
 ```python
-DB_EDITOR = {
+DB_ADAPTER = {
     'SCHEMA': 'CONN_ORCL',
     'ALLOWED_BACKENDS': ['oracle'],
     'PREFIX': {
@@ -51,12 +51,12 @@ DB_EDITOR = {
 }
 ```
 
-You must setting the connection parameter `ENGINE` from `DATABASES` with the custom oracle database backend to apply your `DB_EDITOR` settings.
+You must setting the connection parameter `ENGINE` from `DATABASES` with the custom oracle database backend to apply your `DB_ADAPTER` settings.
 
 ```python
 DATABASES = {
     'default': {
-        'ENGINE': 'db_editor.db.backends.oracle',
+        'ENGINE': 'db_adapter.db.backends.oracle',
         'NAME': 'mydatabase',
         'USER': 'mydatabaseuser',
         'PASSWORD': 'mypassword',
@@ -67,12 +67,12 @@ DATABASES = {
 ```
 
 ## Settings
-Configuration for django-db-adapter is all namespaced inside a single Django setting, named `DB_EDITOR`.
+Configuration for django-db-adapter is all namespaced inside a single Django setting, named `DB_ADAPTER`.
 
-If you need to access the values of `db_editor` settings in your project, you should use the `settings` object. For example.
+If you need to access the values of `db_adapter` settings in your project, you should use the `settings` object. For example.
 
 ```python
-from db_editor.config import settings
+from db_adapter.config import settings
 
 print settings.SCHEMA
 print settings.PREFIX['TABLE']
