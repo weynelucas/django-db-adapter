@@ -9,15 +9,15 @@ from os import path
 here = path.abspath(path.dirname(__file__))
 
 
-# with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
-#     long_description = f.read()
+with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
+    long_description = f.read()
 
 
 setup(
     name='django-db-editor', 
     version='1.0.0', 
     description='A configurable database backend for Oracle',
-    # long_description=long_description,
+    long_description=long_description,
     url='https://github.com/weynelucas/django-db-editor/', 
     download_url="https://github.com/weynelucas/django-db-editor/archive/1.0.0.tar.gz",
     author='Lucas Weyne',
