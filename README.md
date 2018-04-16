@@ -126,3 +126,4 @@ END;
 ## Release Notes
 
 - 1.0.0 - 16/04/2018 - First release
+- 1.0.1 - 16/04/2018 - Rename package and fix setup issues
