@@ -23,7 +23,7 @@ class DatabaseOperations(operations.DatabaseOperations):
         return string.replace_prefix(
             truncate_name(table, name_length).upper(),
             settings.PREFIX.get('TABLE'),
-            prefix
+            prefix.upper()
         )
 
     def _get_trigger_name(self, table):
@@ -35,5 +35,5 @@ class DatabaseOperations(operations.DatabaseOperations):
     def _get_sequence_name(self, table):
         return self._get_operation_name(
             table=table,
-            prefix=settings.PREFIX.get('SEQUENCE')
+            prefix=settings.PREFIX.get('SEQUENCE'),
         )
