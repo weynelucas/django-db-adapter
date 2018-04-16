@@ -32,4 +32,39 @@ INSTALLED_APPS = (
 )
 ```
 
-Any global settings for a Django DB Editor are kept in a single configuration dictionary named `DB_EDITOR`
+## Quickstart
+Any global settings for a django-db-editor are kept in a single configuration dictionary named `DB_EDITOR`
+
+```python
+# settings.py
+
+DB_EDITOR = {
+    'SCHEMA': os.getenv('DB_SCHEMA', ''),
+    'ALLOWED_BACKENDS': ['oracle'],
+    'PREFIX': {
+        'TABLE': 'tb_',
+        'FOREIGN_KEY': 'ce_',
+        'INDEX': 'ix_',
+        'UNIQUE': 'ct_',
+        'TRIGGER': 'tg_',
+        'SEQUENCE': 'sq_'
+    }
+}
+```
+
+You must setting the connection parameter `ENGINE` from `DATABASES` with the custom oracle database backend to apply your `DB_EDITOR` settings.
+
+```python
+# settings.py
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'db_editor.db.backends.oracle',
+        'NAME': 'mydatabase',
+        'USER': 'mydatabaseuser',
+        'PASSWORD': 'mypassword',
+        'HOST': '127.0.0.1',
+        'PORT': '1521'
+    }
+}
+```
