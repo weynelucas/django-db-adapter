@@ -11,12 +11,12 @@ with open('README.md') as f:
 
 setup(
     name='django-db-adapter', 
-    version='1.0.1', 
+    version='1.0.2', 
     description='A configurable database backend for Oracle',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/weynelucas/django-db-adapter/', 
-    download_url="https://github.com/weynelucas/django-db-adapter/archive/1.0.1.tar.gz",
+    download_url="https://github.com/weynelucas/django-db-adapter/archive/1.0.2.tar.gz",
     author='Lucas Weyne',
     author_email='weynelucas@gmail.com',
     classifiers=[ 
