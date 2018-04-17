@@ -76,8 +76,8 @@ If you need to access the values of `db_adapter` settings in your project, you s
 ```python
 from db_adapter.config import settings
 
-print settings.SCHEMA
-print settings.PREFIX['TABLE']
+print(settings.SCHEMA)
+print(settings.PREFIX['TABLE'])
 ```
 
 ### Global settings
