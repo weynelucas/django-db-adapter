@@ -129,3 +129,4 @@ END;
 
 - 1.0.0 - 16/04/2018 - First release
 - 1.0.1 - 16/04/2018 - Rename package and fix setup issues
+- 1.0.2 - 17/04/2018 - Fix documentation preview
