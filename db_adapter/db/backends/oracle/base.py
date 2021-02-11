@@ -1,12 +1,14 @@
-from django.db.backends.oracle import base
+from django.db.backends.oracle import base as oracle
 
-from .operations import DatabaseOperations
-from .schema import DatabaseSchemaEditor
+from . import operations, schema
 
 
-class DatabaseWrapper(base.DatabaseWrapper):
-    SchemaEditorClass = DatabaseSchemaEditor
+class DatabaseWrapper(oracle.DatabaseWrapper):
+    SchemaEditorClass = schema.DatabaseSchemaEditor
+    ops_class = operations.DatabaseOperations
 
-    def __init__(self, *args, **kwargs):
-        super(DatabaseWrapper, self).__init__(*args, *kwargs)
-        self.ops = DatabaseOperations(self)
+    data_types = {
+        **oracle.DatabaseWrapper.data_types,
+        'AutoField': 'NUMBER(11)',
+        'BigAutoField': 'NUMBER(19)',
+    }

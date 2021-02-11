@@ -1,45 +1,28 @@
-from django.db.backends.oracle import schema
+from django.db.backends.oracle import schema as oracle
 
-from ....utils import string
-from ....config import settings
+from ..base.schema import DatabaseAdapterSchemaEditor
+from . import constants
 
 
-class DatabaseSchemaEditor(schema.DatabaseSchemaEditor):
-    prefix_type_map = {
-        '_fk': 'FOREIGN_KEY',
-        '_uniq': 'UNIQUE', 
-        'default': 'INDEX', 
+class DatabaseSchemaEditor(
+    DatabaseAdapterSchemaEditor, oracle.DatabaseSchemaEditor
+):
+    sql_create_table = constants.SQL_CREATE_TABLE
+    sql_create_check = constants.SQL_CREATE_CHECK
+    sql_create_comment = constants.SQL_COMMENT_ON_COLUMN
+    sql_create_pk = constants.SQL_CREATE_PK
+    sql_create_fk = constants.SQL_CREATE_FK
+    sql_create_index = constants.SQL_CREATE_INDEX
+    sql_create_unique = constants.SQL_CREATE_UNIQUE
+    sql_grant = constants.SQL_GRANT
+    sql_comment_on_column = constants.SQL_COMMENT_ON_COLUMN
+
+    sql_ending = ';\n/\n'
+    sql_column_separator = ',\n    '
+
+    data_type_check_term = {
+        'BooleanField': '_bool',
+        'NullBooleanField': '_bool',
+        'PositiveIntegerField': '_gte',
+        'PositiveSmallIntegerField': '_gte',
     }
-
-    def _get_index_name_prefix(self, suffix=''):
-        pattern = list(filter(
-            lambda p: suffix.startswith(p), 
-            self.prefix_type_map.keys()
-        ))
-        return settings.PREFIX.get(
-            self.prefix_type_map[pattern[0]] 
-            if pattern
-            else self.prefix_type_map['default']
-        )
-
-    def _normalize_index_name(self, index_name, suffix=''):
-        # Remove table prefix from object
-        index_name = string.replace_prefix(
-            index_name, 
-            settings.PREFIX.get('TABLE'), 
-            ''
-        )
-        # Normalize name (remove default suffix)
-        normalized_index_name = string.replace_suffix(
-            index_name, suffix, ''
-        )
-        return normalized_index_name
-
-    def _create_index_name(self, model, column_name, suffix=''):
-        index_name = super(DatabaseSchemaEditor, self)._create_index_name(
-            model, column_name, suffix
-        )
-        return self.quote_name('{}{}'.format(
-            self._get_index_name_prefix(suffix), 
-            self._normalize_index_name(index_name)
-        ))
