@@ -19,10 +19,10 @@ class DatabaseAdapterOperations:
         )
 
         args = {
-            'sq_name': self._get_sequence_name(table),
+            'sq_name': self._get_sequence_name(table, column=field.column),
             'sq_minvalue': minvalue,
             'sq_maxvalue': maxvalue,
-            'tr_name': self._get_trigger_name(table),
+            'tr_name': self._get_trigger_name(table, column=field.column),
             'tbl_name': self.quote_name(table),
             'col_name': self.quote_name(column),
         }
@@ -37,13 +37,17 @@ class DatabaseAdapterOperations:
 
         return None, None
 
-    def _get_sequence_name(self, table):
-        return self._object_name(table, pattern=self.obj_name_sequence).upper()
+    def _get_sequence_name(self, table, column=''):
+        return self._object_name(
+            table, pattern=self.obj_name_sequence, column=column
+        ).upper()
 
-    def _get_trigger_name(self, table):
-        return self._object_name(table, pattern=self.obj_name_trigger).upper()
+    def _get_trigger_name(self, table, column=''):
+        return self._object_name(
+            table, pattern=self.obj_name_trigger, column=column
+        ).upper()
 
-    def _object_name(self, table, pattern):
+    def _object_name(self, table, pattern, column=''):
         (
             namespace,
             table,
@@ -55,6 +59,8 @@ class DatabaseAdapterOperations:
             table=table,
             table_identifier=table_identifier,
             table_name=table_name,
+            columns=column,
+            name='%s_%s' % (table_name, column) if column else table_name,
         )
 
         if namespace:
