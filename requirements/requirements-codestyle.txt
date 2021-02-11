@@ -1,0 +1,6 @@
+# PEP8 code linting and formatting
+flake8==3.8.4
+black==20.8b1
+
+# Sort and lint imports
+isort==5.4.2

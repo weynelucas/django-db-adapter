@@ -1,51 +1,21 @@
-from django.db.models.signals import class_prepared, pre_init, post_init
+from django.db.models import Model
 
-from .config import settings
-
-
-def is_allowed_backend():
-    """
-    Check if connection is from allowed backend
-    """
-    if '*' in settings.ALLOWED_BACKENDS:
-        return True
-
-    from django.db import connection
-    
-    backend = connection         \
-        .settings_dict['ENGINE'] \
-        .split('.')[-1]          \
-        .decode()                
-
-    return backend in settings.ALLOWED_BACKENDS
+from .utils import normalize_table
 
 
-def add_db_table_prefix(sender, **kwargs):
-    """
-    Add prefix for all configured models 
-    """
-    if not is_allowed_backend():
-        return
+def apply_db_table_normalization(sender: Model, **kwargs):
+    from .settings import db_settings
 
-    owner = settings.SCHEMA
-    prefix = settings.PREFIX.get('TABLE')
-    
-    if owner:
-        owner = owner + '.'
-    
-    if isinstance(prefix, dict):
-        app_label = sender._meta.app_label.lower()
-        sender_name = sender._meta.object_name.lower()
-        full_name = app_label + "." + sender_name
-        if full_name in prefix:
-            prefix = prefix[full_name]
-        elif app_label in prefix:
-            prefix = prefix[app_label]
-        else:
-            prefix = prefix.get(None, None)
+    should_normalize = (
+        db_settings.ENABLE_DB_TABLE_NORMALIZATION
+        and db_settings.DEFAULT_DB_TABLE_FORMAT
+    )
 
-    if prefix:
-        sender._meta.db_table = owner + prefix + sender._meta.db_table
+    if should_normalize:
+        normalized_name = normalize_table(
+            sender._meta.db_table,
+            format=db_settings.DEFAULT_DB_TABLE_FORMAT,
+            exclude=db_settings.IGNORE_DB_TABLE_FORMATS,
+        )
 
-
-class_prepared.connect(add_db_table_prefix)
+        sender._meta.db_table = normalized_name

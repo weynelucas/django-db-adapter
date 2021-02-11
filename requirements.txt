@@ -1,0 +1,4 @@
+-r requirements/requirements-install-requires.txt
+-r requirements/requirements-testing.txt
+-r requirements/requirements-codestyle.txt
+-r requirements/requirements-optional.txt
