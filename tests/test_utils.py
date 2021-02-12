@@ -73,6 +73,12 @@ class NormalizeTableTests(TestCase):
         self.assertEqual(with_suffix, 'django_site_tbl')
         self.assertEqual(with_namespace, '"db_adapter"."django_site"')
 
+    def test_add_namespace_from_format_when_not_provided(self):
+        without_namespace = normalize_table(
+            'tbl_django_site', '"db_adapter"."tbl_{table_name}"'
+        )
+        self.assertEqual(without_namespace, '"db_adapter"."tbl_django_site"')
+
     def test_ignore_exclude_formats(self):
         format = '"db_adapter"."tbl_{table_name}"'
         exclude = [

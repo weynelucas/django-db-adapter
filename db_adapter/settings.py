@@ -23,6 +23,8 @@ from django.test.signals import setting_changed
 DEFAULTS = {
     # Table naming patterns
     'DEFAULT_DB_TABLE_FORMAT': '',
+    'IGNORE_DB_TABLE_FORMATS': [],
+    'ENABLE_DB_TABLE_NORMALIZATION': True,
 
     # Other objects naming pattern
     'DEFAULT_SEQUENCE_NAME': '{table}_sq',

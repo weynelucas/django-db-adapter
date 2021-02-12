@@ -38,6 +38,17 @@ def normalize_table(db_table: str, format: str, exclude=[]):
         if result:
             return db_table
 
+    namespace, table_name = split_identifier(db_table)
+    namespace_format, table_format = split_identifier(format)
+
+    # Add namespace from format when specified, but not included in db_table
+    if namespace_format and not namespace:
+        result = parse(table_format, table_name)
+        formatted = table_name
+        if not result:
+            formatted = table_format.format(table_name=table_name)
+        return '"{}"."{}"'.format(namespace_format, formatted)
+
     pattern = compile(format)
     result = pattern.parse(db_table)
     if not result:
