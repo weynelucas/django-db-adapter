@@ -1,26 +1,46 @@
-import re
-from typing import Tuple
+from collections import namedtuple
+
+from parse import compile, parse
 
 from django.db.backends.utils import split_identifier
 
-from .settings import db_settings
-
-DEFAULT_TABLE_PATTERN = r'^(?P<prefix>(%(identifiers)s)?)(?P<name>\w+)'
+# from .settings import db_settings
 
 
-def split_table_identifiers(
-    table,
-    pattern=DEFAULT_TABLE_PATTERN,
-    allowed_identifiers=db_settings.ALLOWED_TABLE_IDENTIFIERS,
-) -> Tuple[str, str, str, str]:
-    groupdict = {}
-    namespace, object = split_identifier(table)
+TableIdentifiers = namedtuple(
+    'TableIdentifiers', ['namespace', 'table', 'table_name']
+)
 
-    groupdict.update({'namespace': namespace, 'object': object})
 
-    regex = pattern % dict(identifiers='|'.join(allowed_identifiers))
-    match = re.match(regex, object)
-    if match:
-        groupdict.update(match.groupdict())
+def split_table_identifiers(db_table, format='') -> TableIdentifiers:
+    namespace, table = split_identifier(db_table)
 
-    return tuple(groupdict.values())
+    groupdict = dict(
+        namespace=namespace,
+        table=table,
+        table_name=table,
+    )
+
+    if format:
+        _, table_format = split_identifier(format)
+
+        result = parse(table_format, table)
+        if result:
+            groupdict.update(result.named)
+
+    return TableIdentifiers(**groupdict)
+
+
+def normalize_table(db_table: str, format: str, exclude=[]):
+    # Ignore excluded formats
+    for fmt in exclude:
+        result = parse(fmt, db_table)
+        if result:
+            return db_table
+
+    pattern = compile(format)
+    result = pattern.parse(db_table)
+    if not result:
+        return format.format(table_name=db_table)
+
+    return db_table

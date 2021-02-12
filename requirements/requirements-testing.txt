@@ -1,0 +1,3 @@
+# Pytest for running the tests.
+pytest==6.2.2
+pytest-django==4.1.0

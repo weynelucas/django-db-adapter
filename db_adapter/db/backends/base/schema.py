@@ -21,9 +21,11 @@ class DatabaseAdapterSchemaEditor:
     sql_column_separator = ','
 
     # Check constraints definitions
-    data_type_check_term = {}
-    sql_chek_not_null_term = '_nn'
+    data_type_check_qualifier = {}
+    sql_chek_not_null_qualifier = '_nn'
     sql_check_not_null = 'IS NOT NULL'
+
+    db_table_format = db_settings.DEFAULT_DB_TABLE_FORMAT
 
     # Database objects naming patterns
     obj_name_index = db_settings.DEFAULT_INDEX_NAME
@@ -168,7 +170,7 @@ class DatabaseAdapterSchemaEditor:
                     model,
                     [field.column],
                     pattern=self.obj_name_check,
-                    term='_nn',
+                    qualifier='_nn',
                 )
                 check = '%(qn_column)s IS NOT NULL' % dict(
                     qn_column=self.quote_name(field.column)
@@ -178,14 +180,14 @@ class DatabaseAdapterSchemaEditor:
                 )
 
             if db_params['check']:
-                term = self.data_type_check_term.get(
+                qualifier = self.data_type_check_qualifier.get(
                     field.get_internal_type(), ''
                 )
                 constraint_name = self._create_object_name(
                     model,
                     [field.column],
                     pattern=self.obj_name_check,
-                    term=term,
+                    qualifier=qualifier,
                 )
                 output.append(
                     self._create_check_sql(
@@ -225,20 +227,19 @@ class DatabaseAdapterSchemaEditor:
             return output
 
     def _create_object_name(
-        self, model: Model, columns: list, pattern, term=''
+        self, model: Model, columns: list, pattern, qualifier=''
     ):
-        _, table, table_identifier, table_name = split_table_identifiers(
-            model._meta.db_table
+        _, table, table_name = split_table_identifiers(
+            model._meta.db_table, self.db_table_format
         )
         column_names = '_'.join(columns)
 
-        return pattern % dict(
+        return pattern.format(
             table=table,
-            table_identifier=table_identifier,
             table_name=table_name,
             columns=column_names,
             name='%s_%s' % (table_name, column_names),
-            term=term,
+            qualifier=qualifier,
         )
 
     def _create_index_sql(self, model, fields, suffix='', sql=None):

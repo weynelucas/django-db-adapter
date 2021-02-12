@@ -3,17 +3,14 @@ Settings are all namespaced in the DB_ADAPTER setting.
 For example your project's `settings.py` file might look like this:
 
 DB_ADAPTER = {
-    'DEFAULT_TABLE_NAMESPACE': 'db_adapter',
-    'DEFAULT_TABLE_IDENTIFIER': 'tb_',
-    'ALLOWED_TABLE_IDENTIFIERS': [
-        'au_',
-        'tb_',
-        'tt_',
-        'tm_',
-        'vw_',
-    ],
-    'DEFAULT_SEQUENCE_NAME': 'sq_%(table)s',
-    'DEFAULT_TRIGGER_NAME': 'tg_%(table_name)s_b',
+    'DEFAULT_DB_TABLE_FORMAT': '"pools"."tb_{table_name}"',
+    'DEFAULT_SEQUENCE_NAME': 'sq_{table_name}',
+    'DEFAULT_TRIGGER_NAME': 'tg_{table_name}_b',
+    'DEFAULT_INDEX_NAME': 'ix_{name}',
+    'DEFAULT_PRIMARY_KEY_NAME': 'pk_{name}',
+    'DEFAULT_FOREIGN_KEY_NAME': 'fk_{name}',
+    'DEFAULT_UNIQUE_NAME': 'ct_{name}_uniq',
+    'DEFAULT_CHECK_NAME': 'ct_{name}{qualifier}',
 }
 
 Based on similar settings structure from django-rest-framework:
@@ -25,18 +22,16 @@ from django.test.signals import setting_changed
 # fmt: off
 DEFAULTS = {
     # Table naming patterns
-    'DEFAULT_TABLE_IDENTIFIER': '',
-    'DEFAULT_TABLE_NAMESPACE': '',
-    'ALLOWED_TABLE_IDENTIFIERS': [],
+    'DEFAULT_DB_TABLE_FORMAT': '',
 
     # Other objects naming pattern
-    'DEFAULT_SEQUENCE_NAME': '%(table)s_sq',
-    'DEFAULT_TRIGGER_NAME': '%(table)s_%(columns)s_tr',
-    'DEFAULT_INDEX_NAME': '%(table)s_%(columns)s_idx',
-    'DEFAULT_PRIMARY_KEY_NAME': '%(table)s_%(columns)s_pk',
-    'DEFAULT_FOREIGN_KEY_NAME': '%(table)s_%(columns)s_fk',
-    'DEFAULT_UNIQUE_NAME': '%(table)s_%(columns)s_uniq',
-    'DEFAULT_CHECK_NAME': '%(table)s_%(columns)s%(term)s_check',
+    'DEFAULT_SEQUENCE_NAME': '{table}_sq',
+    'DEFAULT_TRIGGER_NAME': '{table}_{columns}_tr',
+    'DEFAULT_INDEX_NAME': '{table}_{columns}_idx',
+    'DEFAULT_PRIMARY_KEY_NAME': '{table}_{columns}_pk',
+    'DEFAULT_FOREIGN_KEY_NAME': '{table}_{columns}_fk',
+    'DEFAULT_UNIQUE_NAME': '{table}_{columns}_uniq',
+    'DEFAULT_CHECK_NAME': '{table}_{columns}{qualifier}_check',
 }
 # fmt: on
 
@@ -84,7 +79,7 @@ db_settings = DatabaseAdapterSettings(None, DEFAULTS)
 
 def reload_db_settings(*args, **kwargs):
     setting = kwargs['setting']
-    if setting == 'REST_FRAMEWORK':
+    if setting == 'DB_ADAPTER':
         db_settings.reload()
 
 

@@ -6,6 +6,8 @@ class DatabaseAdapterOperations:
     sql_create_sequence = None
     sql_create_trigger = None
 
+    db_table_format = db_settings.DEFAULT_DB_TABLE_FORMAT
+
     obj_name_sequence = db_settings.DEFAULT_SEQUENCE_NAME
     obj_name_trigger = db_settings.DEFAULT_TRIGGER_NAME
 
@@ -48,24 +50,18 @@ class DatabaseAdapterOperations:
         ).upper()
 
     def _object_name(self, table, pattern, column=''):
-        (
-            namespace,
-            table,
-            table_identifier,
-            table_name,
-        ) = split_table_identifiers(table)
+        namespace, table, table_name = split_table_identifiers(
+            table, self.db_table_format
+        )
 
-        name = pattern % dict(
+        name = pattern.format(
             table=table,
-            table_identifier=table_identifier,
             table_name=table_name,
             columns=column,
             name='%s_%s' % (table_name, column) if column else table_name,
         )
 
         if namespace:
-            return '"%(namespace)s"."%(name)s"' % dict(
-                namespace=namespace, name=name
-            )
+            return '"{}"."{}"'.format(namespace, name)
 
-        return object
+        return table
