@@ -1,11 +1,10 @@
 import logging
-from typing import Tuple
+from typing import List, Tuple, Union
 
 from django.db.models import Field, Model
 from django.db.transaction import TransactionManagementError
 
 from db_adapter.settings import db_settings
-from db_adapter.utils import split_table_identifiers
 
 logger = logging.getLogger('django.db.backends.schema')
 
@@ -24,15 +23,6 @@ class DatabaseAdapterSchemaEditor:
     data_type_check_qualifier = {}
     sql_chek_not_null_qualifier = '_nn'
     sql_check_not_null = 'IS NOT NULL'
-
-    db_table_format = db_settings.DEFAULT_DB_TABLE_FORMAT
-
-    # Database objects naming patterns
-    obj_name_index = db_settings.DEFAULT_INDEX_NAME
-    obj_name_pk = db_settings.DEFAULT_PRIMARY_KEY_NAME
-    obj_name_fk = db_settings.DEFAULT_FOREIGN_KEY_NAME
-    obj_name_unique = db_settings.DEFAULT_UNIQUE_NAME
-    obj_name_check = db_settings.DEFAULT_CHECK_NAME
 
     def execute(self, sql, params=()):
         """Execute the given SQL statement, with optional parameters."""
@@ -140,11 +130,11 @@ class DatabaseAdapterSchemaEditor:
         output = []
         for field in model._meta.local_fields:
             if field.unique and not field.primary_key:
-                output.append(self._create_unique_sql(model, [field.column]))
+                output.append(self._create_unique_sql(model, [field]))
 
         for fields in model._meta.unique_together:
-            columns = [model._meta.get_field(field).column for field in fields]
-            output.append(self._create_unique_sql(model, columns))
+            fields = [model._meta.get_field(field) for field in fields]
+            output.append(self._create_unique_sql(model, fields))
 
         return output
 
@@ -166,11 +156,8 @@ class DatabaseAdapterSchemaEditor:
             db_params = field.db_parameters(connection=self.connection)
 
             if not field.null:
-                constraint_name = self._create_object_name(
-                    model,
-                    [field.column],
-                    pattern=self.obj_name_check,
-                    qualifier='_nn',
+                constraint_name = self._check_constraint_name(
+                    model, field, qualifier='_nn'
                 )
                 check = '%(qn_column)s IS NOT NULL' % dict(
                     qn_column=self.quote_name(field.column)
@@ -183,11 +170,8 @@ class DatabaseAdapterSchemaEditor:
                 qualifier = self.data_type_check_qualifier.get(
                     field.get_internal_type(), ''
                 )
-                constraint_name = self._create_object_name(
-                    model,
-                    [field.column],
-                    pattern=self.obj_name_check,
-                    qualifier=qualifier,
+                constraint_name = self._check_constraint_name(
+                    model, field, qualifier=qualifier
                 )
                 output.append(
                     self._create_check_sql(
@@ -227,20 +211,33 @@ class DatabaseAdapterSchemaEditor:
             return output
 
     def _create_object_name(
-        self, model: Model, columns: list, pattern, qualifier=''
+        self,
+        model: Model,
+        fields: Union[List[Field], List[str]],
+        type: str,
+        **kwargs,
     ):
-        _, table, table_name = split_table_identifiers(
-            model._meta.db_table, self.db_table_format
-        )
-        column_names = '_'.join(columns)
+        def enforce_model_field(field_or_column_name):
+            """
+            Workaround function to work with Dajngo version wher the backend
+            provide the list of column names instead model fields
+            """
+            if isinstance(field_or_column_name, str):
+                return next(
+                    filter(
+                        lambda field: field.column == field_or_column_name,
+                        model._meta.local_fields,
+                    )
+                )
 
-        return pattern.format(
-            table=table,
-            table_name=table_name,
-            columns=column_names,
-            name='%s_%s' % (table_name, column_names),
-            qualifier=qualifier,
-        )
+            return field_or_column_name
+
+        fields = map(enforce_model_field, fields)
+
+        builder = self._get_name_builder()
+        name = builder.process_name(model, fields, type, **kwargs)
+
+        return self.quote_name(name)
 
     def _create_index_sql(self, model, fields, suffix='', sql=None):
         """
@@ -253,11 +250,7 @@ class DatabaseAdapterSchemaEditor:
         sql_create_index = sql or self.sql_create_index
         return sql_create_index % dict(
             table=self.quote_name(model._meta.db_table),
-            name=self.quote_name(
-                self._create_object_name(
-                    model, columns, pattern=self.obj_name_index
-                )
-            ),
+            name=self._create_object_name(model, columns, type='index'),
             using='',
             columns=', '.join(self.quote_name(column) for column in columns),
             extra=tablespace_sql,
@@ -277,13 +270,6 @@ class DatabaseAdapterSchemaEditor:
             deferrable=self.connection.ops.deferrable_sql(),
         )
 
-    def _fk_constraint_name(self, model: Model, field: Field, **kwargs) -> str:
-        return self.quote_name(
-            self._create_object_name(
-                model, [field.column], pattern=self.obj_name_fk
-            )
-        )
-
     def _create_pk_sql(self, model: Model, field: Field):
         table = self.quote_name(model._meta.db_table)
         name = self._pk_constraint_name(model, field)
@@ -294,19 +280,14 @@ class DatabaseAdapterSchemaEditor:
             columns=column,
         )
 
-    def _pk_constraint_name(self, model: Model, field: Field):
-        return self.quote_name(
-            self._create_object_name(
-                model, [field.column], pattern=self.obj_name_pk
-            )
-        )
-
-    def _create_unique_sql(self, model, columns, name=None, condition=None):
+    def _create_unique_sql(self, model, fields, name=None, condition=None):
         table = self.quote_name(model._meta.db_table)
         if name is None:
-            name = self._unique_constraint_name(model, columns)
+            name = self._unique_constraint_name(model, fields)
         else:
             name = self.quote_name(name)
+
+        columns = ', '.join([field.column for field in fields])
 
         if condition:
             return self.sql_create_unique_index % dict(
@@ -319,12 +300,32 @@ class DatabaseAdapterSchemaEditor:
         return self.sql_create_unique % dict(
             table=table,
             name=name,
-            columns=', '.join(self.quote_name(column) for column in columns),
+            columns=columns,
         )
 
-    def _unique_constraint_name(self, model: Model, columns: list):
-        return self.quote_name(
-            self._create_object_name(
-                model, columns, pattern=self.obj_name_unique
-            )
+    def _pk_constraint_name(self, model, field):
+        return self._create_object_name(
+            model, [field], type='primary_key', include_namespace=False
         )
+
+    def _fk_constraint_name(self, model, field, **kwargs) -> str:
+        return self._create_object_name(
+            model, [field], type='foreign_key', include_namespace=False
+        )
+
+    def _check_constraint_name(self, model, field, qualifier=''):
+        return self._create_object_name(
+            model,
+            fields=[field],
+            type='unique',
+            qualifier=qualifier,
+            include_namespace=False,
+        )
+
+    def _unique_constraint_name(self, model, fields):
+        return self._create_object_name(
+            model, fields=fields, type='unique', include_namespace=False
+        )
+
+    def _get_name_builder(self):
+        return getattr(db_settings, 'DEFAULT_NAME_BUILDER_CLASS')()

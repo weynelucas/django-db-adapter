@@ -80,9 +80,15 @@ class ObjectNameBuilderTests(TestCase):
     def test_process_namespaced_table(self):
         """
         When a model include namespace inside `Meta.db_table`, all object names
-        builded from that model should include the namespace too.
+        builded from that model should include the namespace too, excluding
+        calls with `include_namespace=False`
         """
-        obj_name = self.builder.process_name(
-            NamespacedAbstractModel, [], type='trigger'
+        kwargs = dict(model=NamespacedAbstractModel, fields=[], type='trigger')
+
+        with_namespace = self.builder.process_name(**kwargs)
+        without_namespace = self.builder.process_name(
+            **kwargs, include_namespace=False
         )
-        self.assertEqual(obj_name, '"db_adapter"."tg_namespaced_model_b"')
+
+        self.assertEqual(with_namespace, '"db_adapter"."tg_namespaced_model_b"')
+        self.assertEqual(without_namespace, 'tg_namespaced_model_b')

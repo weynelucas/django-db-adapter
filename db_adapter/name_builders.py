@@ -19,7 +19,12 @@ class ObjectNameBuilder:
     }
 
     def process_name(
-        self, model: Model, fields: List[Field], type='', qualifier=''
+        self,
+        model: Model,
+        fields: List[Field],
+        type='',
+        qualifier='',
+        include_namespace=True,
     ):
         parts = split_table_identifiers(
             model._meta.db_table,
@@ -42,7 +47,7 @@ class ObjectNameBuilder:
             name=name,
         )
 
-        if namespace:
+        if namespace and include_namespace:
             return '"{}"."{}"'.format(namespace, obj_name)
 
         return obj_name
