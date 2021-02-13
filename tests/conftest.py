@@ -38,6 +38,7 @@ def pytest_configure(config):
             'django.contrib.sites',
             'django.contrib.staticfiles',
             'db_adapter',
+            'tests',
         ),
         PASSWORD_HASHERS=('django.contrib.auth.hashers.MD5PasswordHasher',),
     )
