@@ -1,28 +1,26 @@
+from functools import lru_cache
 from typing import List
 
 from django.db.models import Field, Model
+from django.utils.functional import cached_property
 
 from .settings import db_settings
 from .utils import split_table_identifiers
 
+Fields = List[Field]
+
 
 class ObjectNameBuilder:
-    db_table_format = db_settings.DEFAULT_DB_TABLE_FORMAT
-    obj_type_formats = {
-        'sequence': db_settings.DEFAULT_SEQUENCE_NAME,
-        'trigger': db_settings.DEFAULT_TRIGGER_NAME,
-        'index': db_settings.DEFAULT_INDEX_NAME,
-        'primary_key': db_settings.DEFAULT_PRIMARY_KEY_NAME,
-        'foreign_key': db_settings.DEFAULT_FOREIGN_KEY_NAME,
-        'unique': db_settings.DEFAULT_UNIQUE_NAME,
-        'check': db_settings.DEFAULT_CHECK_NAME,
-    }
+    default_db_settings = db_settings
+
+    def __init__(self, settings=None):
+        self.settings = settings or self.default_db_settings
 
     def process_name(
         self,
         model: Model,
-        fields: List[Field],
-        type='',
+        fields: Fields,
+        type: str,
         qualifier='',
         include_namespace=True,
     ):
@@ -40,7 +38,7 @@ class ObjectNameBuilder:
             else parts.table_name
         )
 
-        obj_name = self.obj_type_formats[type].format(
+        obj_name = self.object_type_name_formats[type].format(
             **table_parts_dict,
             qualifier=qualifier,
             columns=column_names,
@@ -51,3 +49,19 @@ class ObjectNameBuilder:
             return '"{}"."{}"'.format(namespace, obj_name)
 
         return obj_name
+
+    @cached_property
+    def object_type_name_formats(self):
+        return {
+            'sequence': self.settings.DEFAULT_SEQUENCE_NAME,
+            'trigger': self.settings.DEFAULT_TRIGGER_NAME,
+            'index': self.settings.DEFAULT_INDEX_NAME,
+            'primary_key': self.settings.DEFAULT_PRIMARY_KEY_NAME,
+            'foreign_key': self.settings.DEFAULT_FOREIGN_KEY_NAME,
+            'unique': self.settings.DEFAULT_UNIQUE_NAME,
+            'check': self.settings.DEFAULT_CHECK_NAME,
+        }
+
+    @cached_property
+    def db_table_format(self) -> str:
+        return self.settings.DEFAULT_DB_TABLE_FORMAT

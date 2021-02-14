@@ -12,7 +12,6 @@ class DBAdapterModel(models.Model):
 
 
 class BasicModel(DBAdapterModel):
-    id = models.AutoField(primary_key=True)
     text = models.CharField(
         max_length=100,
         db_column='vl_text',
@@ -21,12 +20,34 @@ class BasicModel(DBAdapterModel):
     )
 
     class Meta:
-        db_table = 'tbl_basic_model'
+        db_table = 'tbl_basic'
+
+
+class ForeignKeyTarget(DBAdapterModel):
+    name = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = 'tbl_fk_target'
+
+
+class ForeignKeySource(DBAdapterModel):
+    name = models.CharField(max_length=100)
+    target = models.ForeignKey(
+        ForeignKeyTarget,
+        related_name='sources',
+        help_text='Target',
+        verbose_name='Target',
+        on_delete=models.CASCADE,
+        db_column='target_id',
+    )
+
+    class Meta:
+        db_table = 'tbl_fk_src'
 
 
 class NamespacedAbstractModel(DBAdapterModel):
     name = models.CharField(max_length=100)
 
     class Meta:
-        db_table = '"db_adapter"."tbl_namespaced_model"'
+        db_table = '"db_adapter"."tbl_namespaced"'
         abstract = True
