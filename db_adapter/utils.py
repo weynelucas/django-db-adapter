@@ -1,12 +1,13 @@
 from collections import namedtuple
+from typing import List, Union
 
 from parse import compile, parse
 
 from django.db.backends.utils import split_identifier
+from django.db.models import Field, Model
 
-# from .settings import db_settings
-
-
+Fields = List[Field]
+FieldsOrColumns = Union[Field, List[str]]
 TableIdentifiers = namedtuple(
     'TableIdentifiers', ['namespace', 'table', 'table_name']
 )
@@ -55,3 +56,17 @@ def normalize_table(db_table: str, format: str, exclude=[]):
         return format.format(table_name=db_table)
 
     return db_table
+
+
+def enforce_model_fields(model: Model, items: FieldsOrColumns = []) -> Fields:
+    def enforce(field_or_column):
+        if isinstance(field_or_column, str):
+            return next(
+                filter(
+                    lambda f: f.column == field_or_column,
+                    model._meta.local_fields,
+                )
+            )
+        return field_or_column
+
+    return list(map(enforce, items))

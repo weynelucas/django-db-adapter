@@ -1,10 +1,14 @@
+from django.db import models
 from django.test import TestCase
 
 from db_adapter.utils import (
     TableIdentifiers,
+    enforce_model_fields,
     normalize_table,
     split_table_identifiers,
 )
+
+from .models import BasicModel
 
 
 class SplitTableIdentifierTests(TestCase):
@@ -98,3 +102,22 @@ class NormalizeTableTests(TestCase):
         self.assertEqual(excluded_by_prefix, 'adt_report')
         self.assertEqual(excluded_by_name, 'django_migrations')
         self.assertEqual(included, '"db_adapter"."tbl_django_session"')
+
+
+class EnforceModelFieldsTests(TestCase):
+    def test_enforce_model_fields(self):
+        fields = enforce_model_fields(
+            BasicModel,
+            [
+                BasicModel._meta.get_field('id'),
+                'vl_text',
+            ],
+        )
+
+        self.assertIsInstance(fields, list)
+        self.assertTrue(len(fields), 2)
+        self.assertTrue(all(isinstance(f, models.Field) for f in fields))
+
+        pk_field, text_field = fields
+        self.assertEqual(pk_field.column, 'id')
+        self.assertEqual(text_field.column, 'vl_text')

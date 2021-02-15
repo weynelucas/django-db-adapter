@@ -1,4 +1,3 @@
-from functools import lru_cache
 from typing import List
 
 from django.db.models import Field, Model
