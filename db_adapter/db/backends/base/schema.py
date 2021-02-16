@@ -1,28 +1,64 @@
 import logging
-from typing import List, Tuple, Union
+from typing import OrderedDict, Tuple
 
 from django.db.models import Field, Model
 from django.db.transaction import TransactionManagementError
 
 from db_adapter.settings import db_settings
+from db_adapter.utils import enforce_model, enforce_model_fields
 
 logger = logging.getLogger('django.db.backends.schema')
 
 
-class DatabaseAdapterSchemaEditor:
+class DatabaseSchemaEditor:
+    """
+    This class and its subclasses are responsible for emitting schema-changing
+    statements to the databases - model creation/removal/alteration, field
+    renaming, index fiddling, and so on.
+    """
+
+    # Deferred column SQL order
+    deferred_sql_order = (
+        'PRIMARY KEY',
+        'UNIQUE',
+        'FOREIGN KEY',
+        'CHECK',
+        'INDEX',
+        'COMMENT',
+        'SEQUENCE',
+        'TRIGGER',
+    )
+
     # Overrideable SQL templates
     sql_comment_on_column = (
-        'COMMENT ON COLUMN %(table)s.%(column)s is "%(comment)s"'
+        'COMMENT ON COLUMN %(table)s.%(column)s IS "%(comment)s"'
     )
 
     # Executable SQL definitions
     sql_ending = ';'
-    sql_column_separator = ','
+    sql_column_separator = ', '
 
-    # Check constraints definitions
-    data_type_check_qualifier = {}
-    sql_chek_not_null_qualifier = '_nn'
-    sql_check_not_null = 'IS NOT NULL'
+    # Mapping of index name suffix to their database object types
+    suffix_object_types = {
+        '_check': 'check',
+        '_pk': 'primary_key',
+        '_fk': 'foreign_key',
+        '_uniq': 'unique',
+        '_idx': 'index',
+    }
+
+    name_builder_class = db_settings.DEFAULT_NAME_BUILDER_CLASS
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Init deferred column SQL dict
+        self.deferred_column_sql = OrderedDict(
+            [(item, []) for item in self.deferred_sql_order]
+        )
+        self.deferred_table_sql = OrderedDict(
+            [(item, []) for item in self.deferred_sql_order]
+        )
 
     def execute(self, sql, params=()):
         """Execute the given SQL statement, with optional parameters."""
@@ -70,6 +106,47 @@ class DatabaseAdapterSchemaEditor:
         if field.null and not self.connection.features.implied_column_null:
             sql += ' NULL'
 
+        # Check constraints
+        if not field.null:
+            check = '%s IS NOT NULL' % field.column
+            self.deferred_column_sql['CHECK'].append(
+                self._create_check_sql_for_field(
+                    model, field, check, qualifier='_nn'
+                )
+            )
+
+        db_params = field.db_parameters(connection=self.connection)
+        if db_params['check']:
+            self.deferred_column_sql['CHECK'].append(
+                self._create_check_sql_for_field(
+                    model, field, db_params['check']
+                )
+            )
+
+        # Primary/unique keys
+        if field.primary_key:
+            self.deferred_column_sql['PRIMARY KEY'].append(
+                self._create_primary_key_sql(model, field)
+            )
+        elif field.unique:
+            self.deferred_column_sql['UNIQUE'].append(
+                self._create_unique_sql(model, [field.column])
+            )
+
+        # FK
+        if field.remote_field and field.db_constraint:
+            self.deferred_column_sql['FOREIGN KEY'].append(
+                self._create_fk_sql(
+                    model, field, suffix='_fk_%(to_table)s_%(to_column)s'
+                )
+            )
+
+        # Comment columns for fields with help_tex
+        if field.help_text:
+            self.deferred_column_sql['COMMENT'].append(
+                self._create_comment_sql(model, field)
+            )
+
         return sql, params
 
     def table_sql(self, model: Model) -> Tuple[str, list]:
@@ -94,6 +171,19 @@ class DatabaseAdapterSchemaEditor:
             table=self.quote_name(model._meta.db_table),
             definition=self.sql_column_separator.join(column_sqls),
         )
+
+        # Add any unique_togethers (always deferred, as some fields might be
+        # created afterwards, like geometry fields with some backends)
+        for fields in model._meta.unique_together:
+            columns = [model._meta.get_field(field).column for field in fields]
+            self.deferred_table_sql['UNIQUE'].append(
+                self._create_unique_sql(model, columns)
+            )
+
+        # Add any field index and index_together's (deferred as SQLite3
+        # _remake_table needs it)
+        self.deferred_table_sql['INDEX'].extend(self._model_indexes_sql(model))
+
         return sql, params
 
     def create_model(self, model: Model):
@@ -102,101 +192,12 @@ class DatabaseAdapterSchemaEditor:
         if sql:
             self.execute(sql, params or None)
 
-        self.deferred_sql.extend(self._model_pks_sql(model))
-        self.deferred_sql.extend(self._model_uniques_sql(model))
-        self.deferred_sql.extend(self._model_fks_sql(model))
-        self.deferred_sql.extend(self._model_checks_sql(model))
-        self.deferred_sql.extend(self._model_indexes_sql(model))
-        self.deferred_sql.extend(self._model_col_comments_sql(model))
-        self.deferred_sql.extend(self._model_autoincs_sql(model))
+        for item in self.deferred_sql_order:
+            sql_column = self.deferred_column_sql[item]
+            sql_table = self.deferred_table_sql[item]
 
-    def _model_pks_sql(self, model: Model):
-        """
-        Return a list of all primary key constraints SQL statements for the
-        specified model.
-        """
-        output = []
-        for field in model._meta.local_fields:
-            if field.primary_key:
-                output.append(self._create_pk_sql(model, field))
-
-        return output
-
-    def _model_uniques_sql(self, model: Model):
-        """
-        Return a list of all unique constraints SQL statements (unique or
-        unique_together) for the specified model.
-        """
-        output = []
-        for field in model._meta.local_fields:
-            if field.unique and not field.primary_key:
-                output.append(self._create_unique_sql(model, [field]))
-
-        for fields in model._meta.unique_together:
-            fields = [model._meta.get_field(field) for field in fields]
-            output.append(self._create_unique_sql(model, fields))
-
-        return output
-
-    def _model_fks_sql(self, model: Model):
-        """
-        Return a list of all foreign key constraints SQL statements for the
-        specified model.
-        """
-        output = []
-        for field in model._meta.local_fields:
-            if field.remote_field and field.db_constraint:
-                output.append(self._create_fk_sql(model, field))
-
-        return output
-
-    def _model_checks_sql(self, model: Model):
-        output = []
-        for field in model._meta.local_fields:
-            db_params = field.db_parameters(connection=self.connection)
-
-            if not field.null:
-                constraint_name = self._check_constraint_name(
-                    model, field, qualifier='_nn'
-                )
-                check = '%(qn_column)s IS NOT NULL' % dict(
-                    qn_column=self.quote_name(field.column)
-                )
-                output.append(
-                    self._create_check_sql(model, constraint_name, check)
-                )
-
-            if db_params['check']:
-                qualifier = self.data_type_check_qualifier.get(
-                    field.get_internal_type(), ''
-                )
-                constraint_name = self._check_constraint_name(
-                    model, field, qualifier=qualifier
-                )
-                output.append(
-                    self._create_check_sql(
-                        model, constraint_name, db_params['check']
-                    )
-                )
-
-        return output
-
-    def _model_col_comments_sql(self, model: Model):
-        """
-        Return a list of all column comments SQL statements (from fields
-        help_text) for the specified model.
-        """
-        output = []
-        for field in model._meta.local_fields:
-            if field.help_text:
-                sql = self.sql_comment_on_column % dict(
-                    table=self.quote_name(model._meta.db_table),
-                    column=self.quote_name(field.column),
-                    comment=field.help_text,
-                )
-                output.append(sql)
-
-        return output
+            self.deferred_sql.extend(sql_column)
+            self.deferred_sql.extend(sql_table)
 
     def _model_autoincs_sql(self, model: Model):
         output = []
@@ -210,122 +211,61 @@ class DatabaseAdapterSchemaEditor:
 
             return output
 
-    def _create_object_name(
-        self,
-        model: Model,
-        fields: Union[List[Field], List[str]],
-        type: str,
-        **kwargs,
-    ):
-        def enforce_model_field(field_or_column_name):
-            """
-            Workaround function to work with Dajngo version wher the backend
-            provide the list of column names instead model fields
-            """
-            if isinstance(field_or_column_name, str):
-                return next(
-                    filter(
-                        lambda field: field.column == field_or_column_name,
-                        model._meta.local_fields,
-                    )
-                )
-
-            return field_or_column_name
-
-        fields = map(enforce_model_field, fields)
-
-        builder = self._get_name_builder()
-        name = builder.process_name(model, fields, type, **kwargs)
-
-        return self.quote_name(name)
-
-    def _create_index_sql(self, model, fields, suffix='', sql=None):
-        """
-        Return the SQL statement to create the index for one or several fields.
-        `sql` can be specified if the syntax differs from the standard (GIS
-        indexes, ...).
-        """
-        tablespace_sql = self._get_index_tablespace_sql(model, fields)
-        columns = [field.column for field in fields]
-        sql_create_index = sql or self.sql_create_index
-        return sql_create_index % dict(
-            table=self.quote_name(model._meta.db_table),
-            name=self._create_object_name(model, columns, type='index'),
-            using='',
-            columns=', '.join(self.quote_name(column) for column in columns),
-            extra=tablespace_sql,
-        )
-
-    def _create_fk_sql(self, model: Model, field: Field, **kwargs):
-        from_table = model._meta.db_table
-        from_column = field.column
-        to_column = field.target_field.column
-
-        return self.sql_create_fk % dict(
-            table=self.quote_name(from_table),
-            name=self._fk_constraint_name(model, field),
-            column=self.quote_name(from_column),
-            to_table=self.quote_name(field.target_field.model._meta.db_table),
-            to_column=self.quote_name(to_column),
-            deferrable=self.connection.ops.deferrable_sql(),
-        )
-
-    def _create_pk_sql(self, model: Model, field: Field):
-        table = self.quote_name(model._meta.db_table)
-        name = self._pk_constraint_name(model, field)
-        column = self.quote_name(field.column)
-        return self.sql_create_pk % dict(
-            table=table,
-            name=name,
-            columns=column,
-        )
-
-    def _create_unique_sql(self, model, fields, name=None, condition=None):
-        table = self.quote_name(model._meta.db_table)
-        if name is None:
-            name = self._unique_constraint_name(model, fields)
-        else:
-            name = self.quote_name(name)
-
-        columns = ', '.join([field.column for field in fields])
-
-        if condition:
-            return self.sql_create_unique_index % dict(
-                table=table,
-                name=name,
-                columns=columns,
-                condition=' WHERE ' + condition,
+    def _create_check_sql_for_field(self, model, field, check, qualifier=''):
+        if not qualifier:
+            data_type_check_constraints_suffixes = getattr(
+                self.connection, 'data_type_check_constraints_suffixes', {}
+            )
+            qualifier = data_type_check_constraints_suffixes.get(
+                field.get_internal_type(), ''
             )
 
-        return self.sql_create_unique % dict(
-            table=table,
-            name=name,
-            columns=columns,
-        )
-
-    def _pk_constraint_name(self, model, field):
-        return self._create_object_name(
-            model, [field], type='primary_key', include_namespace=False
-        )
-
-    def _fk_constraint_name(self, model, field, **kwargs) -> str:
-        return self._create_object_name(
-            model, [field], type='foreign_key', include_namespace=False
-        )
-
-    def _check_constraint_name(self, model, field, qualifier=''):
-        return self._create_object_name(
+        constraint_name = self._create_index_name(
             model,
-            fields=[field],
-            type='unique',
+            [field.column],
+            suffix='_check',
             qualifier=qualifier,
-            include_namespace=False,
         )
 
-    def _unique_constraint_name(self, model, fields):
-        return self._create_object_name(
-            model, fields=fields, type='unique', include_namespace=False
+        return self._create_check_sql(model, constraint_name, check)
+
+    def _create_check_sql(self, model: Model, name, check):
+        return self.sql_create_check % dict(
+            table=self.quote_name(model._meta.db_table),
+            name=self.quote_name(name),
+            check=check,
         )
 
-    def _get_name_builder(self):
-        return getattr(db_settings, 'DEFAULT_NAME_BUILDER_CLASS')()
+    def _create_primary_key_sql(self, model: Model, field: Field):
+        return self.sql_create_pk % dict(
+            table=self.quote_name(model._meta.db_table),
+            name=self.quote_name(
+                self._create_index_name(
+                    model._meta.db_table, [field.column], suffix='_pk'
+                )
+            ),
+            columns=self.quote_name(field.column),
+        )
+
+    def _create_comment_sql(self, model: Model, field: Field):
+        return self.sql_comment_on_column % dict(
+            table=self.quote_name(model._meta.db_table),
+            column=self.quote_name(field.column),
+            comment=field.help_text,
+        )
+
+    def _create_index_sql(self, model, fields, suffix='_idx', **kwargs):
+        return super()._create_index_sql(model, fields, suffix=suffix, **kwargs)
+
+    def _create_index_name(
+        self, model_or_table_name, column_names, suffix='_idx', qualifier=''
+    ):
+        suffix = suffix and '_'.join(suffix.split('_')[:2])
+        type = self.suffix_object_types[suffix]
+
+        model = enforce_model(model_or_table_name)
+        fields = enforce_model_fields(model, column_names)
+
+        name_builder = self.name_builder_class()
+        name = name_builder.process_name(model, fields, type, qualifier)
+        return self.quote_name(name)

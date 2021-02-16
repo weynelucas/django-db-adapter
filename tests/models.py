@@ -11,43 +11,72 @@ class DBAdapterModel(models.Model):
         abstract = True
 
 
-class BasicModel(DBAdapterModel):
-    text = models.CharField(
-        max_length=100,
-        db_column='vl_text',
-        verbose_name='Text comes here',
-        help_text='Text description',
-    )
+class Reporter(DBAdapterModel):
+    first_name = models.CharField(max_length=30)
+    last_name = models.CharField(max_length=30)
 
     class Meta:
-        db_table = 'tbl_basic'
-
-
-class ForeignKeyTarget(DBAdapterModel):
-    name = models.CharField(max_length=100)
-
-    class Meta:
-        db_table = 'tbl_fk_target'
-
-
-class ForeignKeySource(DBAdapterModel):
-    name = models.CharField(max_length=100)
-    target = models.ForeignKey(
-        ForeignKeyTarget,
-        related_name='sources',
-        help_text='Target',
-        verbose_name='Target',
-        on_delete=models.CASCADE,
-        db_column='target_id',
-    )
-
-    class Meta:
-        db_table = 'tbl_fk_src'
-
-
-class NamespacedAbstractModel(DBAdapterModel):
-    name = models.CharField(max_length=100)
-
-    class Meta:
-        db_table = '"db_adapter"."tbl_namespaced"'
+        db_table = '"tests"."tbl_reporter"'
         abstract = True
+
+
+class Tag(DBAdapterModel):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(
+        null=True, help_text='Optional description for tag'
+    )
+
+    class Meta:
+        db_table = 'tbl_tag'
+
+
+class Author(DBAdapterModel):
+    name = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = 'tbl_author'
+
+
+class Post(DBAdapterModel):
+    name = models.CharField(max_length=30, null=True)
+    text = models.TextField()
+    author = models.ForeignKey(
+        Author,
+        on_delete=models.CASCADE,
+        db_column='written_by',
+    )
+    tag = models.ForeignKey(Tag, on_delete=models.SET_NULL, null=True)
+
+    class Meta:
+        db_table = 'tbl_post'
+
+
+class Square(DBAdapterModel):
+    side = models.PositiveIntegerField(null=True)
+
+    class Meta:
+        db_table = 'tbl_square'
+
+
+class Article(DBAdapterModel):
+    article_id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=30)
+    text = models.TextField(null=True, help_text='Article description')
+    active = models.NullBooleanField()
+    author = models.ForeignKey(
+        Author,
+        on_delete=models.CASCADE,
+        null=True,
+        db_index=False,
+        db_column='written_by',
+    )
+    tag = models.ForeignKey(
+        Tag,
+        on_delete=models.CASCADE,
+        null=True,
+        db_index=True,
+    )
+
+    class Meta:
+        db_table = 'tbl_article'
+        unique_together = ['author', 'name']

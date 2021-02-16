@@ -8,7 +8,7 @@ from db_adapter.utils import (
     split_table_identifiers,
 )
 
-from .models import BasicModel
+from .models import Post
 
 
 class SplitTableIdentifierTests(TestCase):
@@ -107,10 +107,10 @@ class NormalizeTableTests(TestCase):
 class EnforceModelFieldsTests(TestCase):
     def test_enforce_model_fields(self):
         fields = enforce_model_fields(
-            BasicModel,
+            Post,
             [
-                BasicModel._meta.get_field('id'),
-                'vl_text',
+                Post._meta.get_field('tag'),
+                'written_by',
             ],
         )
 
@@ -118,6 +118,8 @@ class EnforceModelFieldsTests(TestCase):
         self.assertTrue(len(fields), 2)
         self.assertTrue(all(isinstance(f, models.Field) for f in fields))
 
-        pk_field, text_field = fields
-        self.assertEqual(pk_field.column, 'id')
-        self.assertEqual(text_field.column, 'vl_text')
+        tag_field, author_field = fields
+        self.assertEqual(tag_field.name, 'tag')
+        self.assertEqual(tag_field.column, 'tag_id')
+        self.assertEqual(author_field.name, 'author')
+        self.assertEqual(author_field.column, 'written_by')

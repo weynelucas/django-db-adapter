@@ -6,6 +6,8 @@ class DatabaseAdapterOperations:
     sql_create_sequence = None
     sql_create_trigger = None
 
+    data_type_check_constraints_suffixes = {}
+
     db_table_format = db_settings.DEFAULT_DB_TABLE_FORMAT
 
     obj_name_sequence = db_settings.DEFAULT_SEQUENCE_NAME
