@@ -1,7 +1,7 @@
 # Django DB Adapter
 
 [![Build](https://github.com/weynelucas/django-db-adapter/workflows/Build/badge.svg)](https://github.com/weynelucas/django-db-adapter/actions)
-[![codecov](https://codecov.io/gh/weynelucas/django-db-adapter/branch/master/graph/badge.svg?token=EZyTLmsPhm)](https://codecov.io/gh/weynelucas/django-db-adapter)
+[![codecov](https://codecov.io/gh/weynelucas/django-db-adapter/branch/develop/graph/badge.svg?token=EZyTLmsPhm)](https://codecov.io/gh/weynelucas/django-db-adapter)
 [![PyPI - Release](https://img.shields.io/pypi/v/django-db-adapter.svg)](https://pypi.python.org/pypi/django-db-adapter)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/django-db-adapter)](https://pypi.python.org/pypi/django-db-adapter)
 [![PyPI - Django Version](https://img.shields.io/pypi/djversions/django-db-adapters)](https://pypi.python.org/pypi/django-db-adapter)
