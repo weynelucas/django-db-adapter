@@ -7,6 +7,7 @@ from . import constants
 class DatabaseOperations(DatabaseOperations, oracle.DatabaseOperations):
     sql_create_sequence = constants.SQL_CREATE_SEQUENCE
     sql_create_trigger = constants.SQL_CREATE_TRIGGER
+    sql_grant = constants.SQL_GRANT
 
     integer_field_ranges = {
         **oracle.DatabaseOperations.integer_field_ranges,
