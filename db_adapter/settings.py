@@ -46,12 +46,19 @@ DEFAULTS = {
         'INSERT',
         'UPDATE',
         'DELETE',
-    ]
+    ],
+    'SQL_FORMAT_OPTIONS': {
+        'unquote': False,
+    },
 }
 # fmt: on
 
 IMPORT_STRINGS = [
     'DEFAULT_NAME_BUILDER_CLASS',
+]
+
+DICT_STRINGS = [
+    'SQL_FORMAT_OPTIONS',
 ]
 
 
@@ -84,12 +91,19 @@ def import_from_string(val, setting_name):
 
 
 class DatabaseAdapterSettings:
-    def __init__(self, user_settings=None, defaults=None, import_strings=None):
+    def __init__(
+        self,
+        user_settings=None,
+        defaults=None,
+        import_strings=None,
+        dict_strings=None,
+    ):
         if user_settings:
             self._user_settings = user_settings
 
         self.defaults = defaults or DEFAULTS
         self.import_strings = import_strings or IMPORT_STRINGS
+        self.dict_strings = dict_strings or DICT_STRINGS
         self._cached_attrs = set()
 
     @property
@@ -112,6 +126,13 @@ class DatabaseAdapterSettings:
         # Coerce import strings into classes
         if attr in self.import_strings:
             val = perform_import(val, attr)
+
+        # Merge user and default settings
+        if attr in self.dict_strings:
+            val = {
+                **self.defaults[attr],
+                **self._user_settings.get(attr, {}),
+            }
 
         # Cache the result
         self._cached_attrs.add(attr)

@@ -59,6 +59,8 @@ class DatabaseSchemaEditor:
         self.deferred_table_sql = {item: [] for item in order}
 
     def execute(self, sql, params=()):
+        sql = self.connection.ops.format_sql(sql)
+
         """Execute the given SQL statement, with optional parameters."""
         # Don't perform the transactional DDL check if SQL is being collected
         # as it's not going to be executed anyway.
