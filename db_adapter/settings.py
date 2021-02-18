@@ -36,8 +36,17 @@ DEFAULTS = {
     'DEFAULT_UNIQUE_NAME': '{table}_{columns}_uniq',
     'DEFAULT_CHECK_NAME': '{table}_{columns}{qualifier}_check',
 
+    # Grant options
+    'DEFAULT_ROLE_NAME': '',
+
     # Base policies
     'DEFAULT_NAME_BUILDER_CLASS': 'db_adapter.name_builders.ObjectNameBuilder',
+    'DEFAULT_OBJECT_PRIVILEGES': [
+        'SELECT',
+        'INSERT',
+        'UPDATE',
+        'DELETE',
+    ]
 }
 # fmt: on
 

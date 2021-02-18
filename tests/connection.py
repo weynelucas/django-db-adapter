@@ -20,7 +20,7 @@ class TestDatabaseOperations(DatabaseOperations, DjangoDatabaseOperations):
         return name
 
 
-class TestDatabaseOperationsWithSqls(TestDatabaseOperations):
+class TestDatabaseOperationsAutoincSql(TestDatabaseOperations):
     integer_field_ranges = {
         'SmallIntegerField': (-99999999999, 99999999999),
         'IntegerField': (-99999999999, 99999999999),
@@ -52,7 +52,11 @@ WHEN (new.%(col_name)s IS NULL)
 '''
 
 
-class TestDatabaseOperationsOptionalRange(TestDatabaseOperationsWithSqls):
+class TestDatabaseOperationsControlSql(TestDatabaseOperationsAutoincSql):
+    role_name = 'rl_tests'
+
+
+class TestDatabaseOperationsOptionalRange(TestDatabaseOperationsAutoincSql):
     sql_create_sequence = '''
 DECLARE
     i INTEGER;
@@ -71,7 +75,7 @@ class TestDatabaseSchemaEditor(DatabaseSchemaEditor, BaseDatabaseSchemaEditor):
 
 
 class TestDatabaseWrapper(DatabaseWrapper):
-    ops_class = TestDatabaseOperationsWithSqls
+    ops_class = TestDatabaseOperationsAutoincSql
     SchemaEditorClass = TestDatabaseSchemaEditor
 
     data_types = {
@@ -119,4 +123,9 @@ class TestDatabaseWrapper(DatabaseWrapper):
     }
 
 
-test_connection = TestDatabaseWrapper(settings_dict={}, alias=DEFAULT_DB_ALIAS)
+class TestDatabaseWrapperControlSql(TestDatabaseWrapper):
+    ops_class = TestDatabaseOperationsControlSql
+
+
+test_connection = TestDatabaseWrapper({}, DEFAULT_DB_ALIAS)
+test_control_connection = TestDatabaseWrapperControlSql({}, DEFAULT_DB_ALIAS)

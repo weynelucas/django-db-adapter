@@ -3,21 +3,45 @@ from django.test import TestCase
 
 from tests.connection import (
     TestDatabaseOperations,
+    TestDatabaseOperationsAutoincSql,
+    TestDatabaseOperationsControlSql,
     TestDatabaseOperationsOptionalRange,
-    TestDatabaseOperationsWithSqls,
     test_connection,
+    test_control_connection,
 )
+
+
+class SqlControlTests(TestCase):
+    def test_control_sql(self):
+        ops = TestDatabaseOperationsAutoincSql(test_connection)
+        control_ops = TestDatabaseOperationsControlSql(test_control_connection)
+
+        sql_none = ops.control_sql('tbl_article')
+        sql_default_privileges = control_ops.control_sql('tbl_article')
+        sql_custom_privileges = control_ops.control_sql(
+            'tbl_article_sq', privileges=['SELECT']
+        )
+
+        self.assertIsNone(sql_none)
+        self.assertEqual(
+            sql_default_privileges,
+            'GRANT SELECT, INSERT, UPDATE, DELETE ON tbl_article TO rl_tests',
+        )
+        self.assertEqual(
+            sql_custom_privileges,
+            'GRANT SELECT ON tbl_article_sq TO rl_tests',
+        )
 
 
 class SqlAutoincTests(TestCase):
     def test_autoinc_sql_without_overwritten_sqls(self):
-        ops = TestDatabaseOperations(connection=test_connection)
+        ops = TestDatabaseOperations(test_connection)
         autoinc_sql = ops.autoinc_sql('tbl_article', 'article_id')
 
         self.assertIsNone(autoinc_sql)
 
     def test_autoinc_sql_with_overwritten_sqls(self):
-        ops = TestDatabaseOperationsWithSqls(connection=test_connection)
+        ops = TestDatabaseOperationsAutoincSql(test_connection)
         autoinc_sql = ops.autoinc_sql('tbl_article', 'article_id')
 
         self.assertEqual(len(autoinc_sql), 2)
@@ -61,11 +85,11 @@ WHEN (new.article_id IS NULL)
         )
 
         with self.assertRaises(ProgrammingError, msg=msg):
-            ops = TestDatabaseOperationsWithSqls(connection=test_connection)
+            ops = TestDatabaseOperationsAutoincSql(test_connection)
             ops.autoinc_sql('tbl_article', 'active')
 
     def test_autoinc_sql_for_optional_integer_field_range(self):
-        ops = TestDatabaseOperationsOptionalRange(connection=test_connection)
+        ops = TestDatabaseOperationsOptionalRange(test_connection)
         autoinc_sql = ops.autoinc_sql('tbl_article', 'active')
 
         self.assertEqual(len(autoinc_sql), 2)
@@ -83,4 +107,15 @@ BEGIN
         EXECUTE IMMEDIATE 'CREATE SEQUENCE "tbl_article_sq"';
     END IF;
 END''',
+        )
+
+    def test_autoinc_sql_grant_sequence(self):
+        ops = TestDatabaseOperationsControlSql(test_control_connection)
+        autoinc_sql = ops.autoinc_sql('tbl_article', 'article_id')
+
+        self.assertEqual(len(autoinc_sql), 3)
+
+        _, grant_sequence_sql, _ = autoinc_sql
+        self.assertEqual(
+            grant_sequence_sql, 'GRANT SELECT ON tbl_article_sq TO rl_tests'
         )

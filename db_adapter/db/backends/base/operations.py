@@ -3,25 +3,32 @@ from functools import lru_cache
 from django.db.utils import ProgrammingError
 from django.utils.functional import cached_property
 
-from db_adapter.name_builders import ObjectNameBuilder
+from db_adapter.settings import db_settings
 from db_adapter.utils import enforce_model, enforce_model_fields
 
 
 class DatabaseOperations:
+    # Overrideable SQL statements
     sql_create_sequence = None
     sql_create_trigger = None
+    sql_grant = 'GRANT %(privileges)s ON %(name)s TO %(role)s'
 
-    name_builder_class = ObjectNameBuilder
+    # Setting variables
+    role_name = db_settings.DEFAULT_ROLE_NAME
+    name_builder_class = db_settings.DEFAULT_NAME_BUILDER_CLASS
+    default_object_privileges = db_settings.DEFAULT_OBJECT_PRIVILEGES
 
     def autoinc_sql(self, table, column):
         if not self.sql_create_sequence and not self.sql_create_trigger:
             return None
 
         model, field = self._enforce_model_field_instances(table, column)
+        sequence_name = self._get_sequence_name(model, field)
+        trigger_name = self._get_trigger_name(model, field)
 
         args = {
-            'sq_name': self._get_sequence_name(model, field),
-            'tr_name': self._get_trigger_name(model, field),
+            'sq_name': sequence_name,
+            'tr_name': trigger_name,
             'tbl_name': self.quote_name(table),
             'col_name': self.quote_name(column),
         }
@@ -33,15 +40,29 @@ class DatabaseOperations:
             pass
 
         try:
-            sequence_sql = self.sql_create_sequence % args
+            sequence_sql = self._get_sequence_sql(sequence_name, args)
             trigger_sql = self.sql_create_trigger % args
-            return sequence_sql, trigger_sql
+            return [*sequence_sql, trigger_sql]
         except KeyError as err:
             if 'sq_max_value' in err.args:
                 raise ProgrammingError(
                     'Cannot retrieve the range of the column type bound to the '
                     'field %s' % field.name
                 )
+
+    def control_sql(self, name, privileges=None):
+        if not self.role_name:
+            return None
+
+        privileges = (
+            self.default_object_privileges if privileges is None else privileges
+        )
+
+        return self.sql_grant % dict(
+            name=self.quote_name(name),
+            privileges=', '.join(privileges),
+            role=self.quote_name(self.role_name),
+        )
 
     @cached_property
     def name_builder(self):
@@ -63,3 +84,12 @@ class DatabaseOperations:
         model, field = self._enforce_model_field_instances(table, column)
         name = self.name_builder.process_name(model, [field], type='trigger')
         return self.quote_name(name)
+
+    def _get_sequence_sql(self, name, args):
+        sequence_sql = [self.sql_create_sequence % args]
+
+        grant_sql = self.control_sql(name, privileges=['SELECT'])
+        if grant_sql:
+            sequence_sql.append(grant_sql)
+
+        return sequence_sql
