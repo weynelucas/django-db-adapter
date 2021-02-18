@@ -16,12 +16,7 @@ class ObjectNameBuilder:
         self.settings = settings or self.default_db_settings
 
     def process_name(
-        self,
-        model: Model,
-        fields: Fields,
-        type: str,
-        qualifier='',
-        include_namespace=True,
+        self, model: Model, fields: Fields, type: str, qualifier=''
     ):
         parts = split_table_identifiers(
             model._meta.db_table,
@@ -44,10 +39,16 @@ class ObjectNameBuilder:
             name=name,
         )
 
-        if namespace and include_namespace:
+        include_namespace = namespace and self.should_include_namespace(
+            model, fields, type, qualifier
+        )
+        if include_namespace:
             return '"{}"."{}"'.format(namespace, obj_name)
 
         return obj_name
+
+    def should_include_namespace(self, model, field, type, qualifier=''):
+        return type in ['sequence', 'trigger', 'index']
 
     @cached_property
     def object_type_name_formats(self):

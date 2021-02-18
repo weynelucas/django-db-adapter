@@ -62,6 +62,19 @@ class Post(DBAdapterModel):
         db_table = 'tbl_post'
 
 
+class TwitterPost(DBAdapterModel):
+    id = models.AutoField(primary_key=True, db_column='twitter_id')
+    name = models.CharField(max_length=100, primary_key=True)
+    flag = models.CharField(max_length=30, null=True, unique=True)
+    description = models.TextField(
+        null=True, help_text='Optional description for tag'
+    )
+
+    class Meta:
+        abstract = True
+        db_table = '"twitter"."tbl_post"'
+
+
 class Article(DBAdapterModel):
     article_id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=30)
