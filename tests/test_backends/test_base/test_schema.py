@@ -2,7 +2,11 @@ import json
 
 from django.test import TestCase
 
-from tests.connection import TestDatabaseSchemaEditor, test_connection
+from tests.connection import (
+    TestDatabaseSchemaEditor,
+    test_connection,
+    test_control_connection,
+)
 from tests.models import Article, Author, Post, Square, Tag
 
 
@@ -14,7 +18,7 @@ def enforce_str_values(data: dict) -> dict:
 
 class SqlObjectCreationTests(TestCase):
     def setUp(self):
-        self.editor = TestDatabaseSchemaEditor(connection=test_connection)
+        self.editor = TestDatabaseSchemaEditor(test_connection)
 
     def test_create_primary_key_sql(self):
         model = Author
@@ -77,7 +81,7 @@ class SqlObjectCreationTests(TestCase):
 
 class SqlColumnTests(TestCase):
     def test_column_sql_for_null_field(self):
-        editor = TestDatabaseSchemaEditor(connection=test_connection)
+        editor = TestDatabaseSchemaEditor(test_connection)
 
         model = Post
         field = Post._meta.get_field('name')
@@ -86,7 +90,7 @@ class SqlColumnTests(TestCase):
         self.assertEqual(str(sql), 'NVARCHAR2(30) NULL')
 
     def test_column_sql_for_not_null_field(self):
-        editor = TestDatabaseSchemaEditor(connection=test_connection)
+        editor = TestDatabaseSchemaEditor(test_connection)
 
         model = Post
         field = Post._meta.get_field('text')
@@ -105,7 +109,7 @@ class SqlColumnTests(TestCase):
         )
 
     def test_column_sql_for_pk_field(self):
-        editor = TestDatabaseSchemaEditor(connection=test_connection)
+        editor = TestDatabaseSchemaEditor(test_connection)
 
         model = Tag
         field = Tag._meta.get_field('name')
@@ -132,7 +136,7 @@ class SqlColumnTests(TestCase):
         )
 
     def test_column_sql_for_fk_field(self):
-        editor = TestDatabaseSchemaEditor(connection=test_connection)
+        editor = TestDatabaseSchemaEditor(test_connection)
 
         model = Post
         field = Post._meta.get_field('tag')
@@ -152,7 +156,7 @@ class SqlColumnTests(TestCase):
         )
 
     def test_column_sql_for_unique_field(self):
-        editor = TestDatabaseSchemaEditor(connection=test_connection)
+        editor = TestDatabaseSchemaEditor(test_connection)
 
         model = Tag
         field = Tag._meta.get_field('flag')
@@ -171,7 +175,7 @@ class SqlColumnTests(TestCase):
         )
 
     def test_column_sql_for_db_check_field(self):
-        editor = TestDatabaseSchemaEditor(connection=test_connection)
+        editor = TestDatabaseSchemaEditor(test_connection)
 
         model = Square
         field = Square._meta.get_field('side')
@@ -190,7 +194,7 @@ class SqlColumnTests(TestCase):
         )
 
     def test_column_sql_for_help_text_field(self):
-        editor = TestDatabaseSchemaEditor(connection=test_connection)
+        editor = TestDatabaseSchemaEditor(test_connection)
 
         model = Tag
         field = Tag._meta.get_field('description')
@@ -208,7 +212,7 @@ class SqlColumnTests(TestCase):
         )
 
     def test_column_sql_for_auto_field(self):
-        editor = TestDatabaseSchemaEditor(connection=test_connection)
+        editor = TestDatabaseSchemaEditor(test_connection)
         model = Article
         field = Article._meta.get_field('article_id')
         sql, _ = editor.column_sql(model, field)
@@ -247,7 +251,7 @@ WHEN (new.article_id IS NULL)
         )
 
     def test_column_sql_for_non_column_field(self):
-        editor = TestDatabaseSchemaEditor(connection=test_connection)
+        editor = TestDatabaseSchemaEditor(test_connection)
         model = Article
         field = Article._meta.get_field('liked_by')
         sql, params = editor.column_sql(model, field)
@@ -258,7 +262,7 @@ WHEN (new.article_id IS NULL)
 
 class SqlTableTests(TestCase):
     def test_table_sql(self):
-        editor = TestDatabaseSchemaEditor(connection=test_connection)
+        editor = TestDatabaseSchemaEditor(test_connection)
 
         sql, _ = editor.table_sql(Article)
         self.assertEqual(
@@ -289,9 +293,26 @@ class SqlTableTests(TestCase):
             ],
         )
 
+    def test_table_sql_with_grant(self):
+        editor = TestDatabaseSchemaEditor(test_control_connection)
+
+        editor.table_sql(Post)
+        table_sql = enforce_str_values(editor.deferred_table_sql)
+        self.assertEqual(
+            table_sql['CONTROL'],
+            ['GRANT SELECT, INSERT, UPDATE, DELETE ON tbl_post TO rl_tests'],
+        )
+
+    def test_table_sql_without_grant(self):
+        editor = TestDatabaseSchemaEditor(test_connection)
+
+        editor.table_sql(Post)
+        table_sql = enforce_str_values(editor.deferred_table_sql)
+        self.assertEqual(table_sql['CONTROL'], [])
+
     def test_create_model(self):
         with TestDatabaseSchemaEditor(
-            connection=test_connection, collect_sql=True
+            test_connection, collect_sql=True
         ) as editor:
             editor.create_model(Article)
 
@@ -375,4 +396,22 @@ WHEN (new.article_id IS NULL)
     END;\
 ''',
             ],
+        )
+
+    def test_create_model_with_grant(self):
+        with TestDatabaseSchemaEditor(
+            test_control_connection, collect_sql=True
+        ) as editor:
+            editor.create_model(Article)
+
+        self.assertEqual(len(editor.collected_sql), 14)
+
+        *_, grant_table_sql, _, grant_sequence_sql, _ = editor.collected_sql
+        self.assertEqual(
+            grant_table_sql,
+            'GRANT SELECT, INSERT, UPDATE, DELETE ON tbl_article TO rl_tests;',
+        )
+        self.assertEqual(
+            grant_sequence_sql,
+            'GRANT SELECT ON tbl_article_sq TO rl_tests;',
         )

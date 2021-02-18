@@ -39,8 +39,8 @@ CREATE INDEX %(name)s
 '''
 
 SQL_GRANT = '''\
-GRANT %(commands)s
-    ON %(object)s
+GRANT %(privileges)s
+    ON %(name)s
     TO %(role)s\
 '''
 

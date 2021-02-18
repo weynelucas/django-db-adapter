@@ -17,7 +17,6 @@ class DatabaseSchemaEditor:
     renaming, index fiddling, and so on.
     """
 
-    # Deferred column SQL order
     deferred_sql_order = (
         'PRIMARY KEY',
         'UNIQUE',
@@ -25,6 +24,7 @@ class DatabaseSchemaEditor:
         'CHECK',
         'INDEX',
         'COMMENT',
+        'CONTROL',
         'SEQUENCE',
         'TRIGGER',
     )
@@ -47,6 +47,7 @@ class DatabaseSchemaEditor:
         '_idx': 'index',
     }
 
+    # Setting variables
     name_builder_class = db_settings.DEFAULT_NAME_BUILDER_CLASS
 
     def __init__(self, *args, **kwargs):
@@ -144,8 +145,8 @@ class DatabaseSchemaEditor:
                 model._meta.db_table, field.column
             )
             if autoinc_sql:
-                sequence_sql, trigger_sql = autoinc_sql
-                self.deferred_column_sql['SEQUENCE'].append(sequence_sql)
+                *sequence_sql, trigger_sql = autoinc_sql
+                self.deferred_column_sql['SEQUENCE'].extend(sequence_sql)
                 self.deferred_column_sql['TRIGGER'].append(trigger_sql)
 
         # Comment columns for fields with help_text
@@ -190,6 +191,11 @@ class DatabaseSchemaEditor:
         # Add any field index and index_together's (deferred as SQLite3
         # _remake_table needs it)
         self.deferred_table_sql['INDEX'].extend(self._model_indexes_sql(model))
+
+        # Grant/Revoke object privileges
+        control_sql = self.connection.ops.control_sql(model._meta.db_table)
+        if control_sql:
+            self.deferred_table_sql['CONTROL'].append(control_sql)
 
         return sql, params
 
