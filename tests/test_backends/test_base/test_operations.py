@@ -119,3 +119,75 @@ END''',
         self.assertEqual(
             grant_sequence_sql, 'GRANT SELECT ON tbl_article_sq TO rl_tests'
         )
+
+
+class FormatSqlTests(TestCase):
+    def setUp(self):
+        self.sql = (
+            'COMMENT ON COLUMN "twitter"."tbl_post"."description" '
+            "is 'Lorem ipsum';"
+        )
+
+    def test_format_sql_unquote_option(self):
+        ops = TestDatabaseOperations(test_connection)
+
+        sql = ops.format_sql(self.sql, unquote=True)
+        self.assertEqual(
+            sql,
+            'COMMENT ON COLUMN twitter.tbl_post.description '
+            "is 'Lorem ipsum';",
+        )
+
+    def test_format_sql_identifier_case_option(self):
+        ops = TestDatabaseOperations(test_connection)
+
+        sql_lower = ops.format_sql(
+            self.sql, unquote=True, identifier_case='lower'
+        )
+        sql_upper = ops.format_sql(
+            self.sql, unquote=True, identifier_case='upper'
+        )
+        sql_capitalize = ops.format_sql(
+            self.sql, unquote=True, identifier_case='capitalize'
+        )
+
+        self.assertEqual(
+            sql_lower,
+            'COMMENT ON COLUMN twitter.tbl_post.description '
+            "is 'Lorem ipsum';",
+        )
+        self.assertEqual(
+            sql_upper,
+            'COMMENT ON COLUMN TWITTER.TBL_POST.DESCRIPTION '
+            "is 'Lorem ipsum';",
+        )
+        self.assertEqual(
+            sql_capitalize,
+            'COMMENT ON COLUMN Twitter.Tbl_post.Description '
+            "is 'Lorem ipsum';",
+        )
+
+    def test_format_sql_keywod_case_option(self):
+        ops = TestDatabaseOperations(test_connection)
+
+        sql_lower = ops.format_sql(self.sql, unquote=True, keyword_case='lower')
+        sql_upper = ops.format_sql(self.sql, unquote=True, keyword_case='upper')
+        sql_capitalize = ops.format_sql(
+            self.sql, unquote=True, keyword_case='capitalize'
+        )
+
+        self.assertEqual(
+            sql_lower,
+            'comment on column twitter.tbl_post.description '
+            "is 'Lorem ipsum';",
+        )
+        self.assertEqual(
+            sql_upper,
+            'COMMENT ON COLUMN twitter.tbl_post.description '
+            "IS 'Lorem ipsum';",
+        )
+        self.assertEqual(
+            sql_capitalize,
+            'Comment On Column twitter.tbl_post.description '
+            "Is 'Lorem ipsum';",
+        )

@@ -1,5 +1,7 @@
 from functools import lru_cache
 
+import sqlparse
+
 from django.db.utils import ProgrammingError
 from django.utils.functional import cached_property
 
@@ -17,6 +19,7 @@ class DatabaseOperations:
     role_name = db_settings.DEFAULT_ROLE_NAME
     name_builder_class = db_settings.DEFAULT_NAME_BUILDER_CLASS
     default_object_privileges = db_settings.DEFAULT_OBJECT_PRIVILEGES
+    sql_format_options = db_settings.SQL_FORMAT_OPTIONS
 
     def autoinc_sql(self, table, column):
         if not self.sql_create_sequence and not self.sql_create_trigger:
@@ -63,6 +66,16 @@ class DatabaseOperations:
             privileges=', '.join(privileges),
             role=self.quote_name(self.role_name),
         )
+
+    def format_sql(self, sql, **kwargs):
+        opts = {**self.sql_format_options, **kwargs}
+
+        formatted = str(sql)
+
+        if opts.pop('unquote', False):
+            formatted = formatted.replace('"', '')
+
+        return sqlparse.format(formatted, **opts)
 
     @cached_property
     def name_builder(self):
