@@ -1,4 +1,5 @@
 from django.db.models import Model
+from django.db.models.signals import class_prepared, pre_init
 
 from .utils import normalize_table
 
@@ -19,3 +20,7 @@ def apply_db_table_normalization(sender: Model, **kwargs):
         )
 
         sender._meta.db_table = normalized_name
+
+
+pre_init.connect(apply_db_table_normalization)
+class_prepared.connect(apply_db_table_normalization)
