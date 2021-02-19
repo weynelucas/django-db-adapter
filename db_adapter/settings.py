@@ -3,14 +3,26 @@ Settings are all namespaced in the DB_ADAPTER setting.
 For example your project's `settings.py` file might look like this:
 
 DB_ADAPTER = {
-    'DEFAULT_DB_TABLE_FORMAT': '"pools"."tb_{table_name}"',
-    'DEFAULT_SEQUENCE_NAME': 'sq_{table_name}',
-    'DEFAULT_TRIGGER_NAME': 'tg_{table_name}_b',
-    'DEFAULT_INDEX_NAME': 'ix_{name}',
-    'DEFAULT_PRIMARY_KEY_NAME': 'pk_{name}',
-    'DEFAULT_FOREIGN_KEY_NAME': 'fk_{name}',
-    'DEFAULT_UNIQUE_NAME': 'ct_{name}_uniq',
-    'DEFAULT_CHECK_NAME': 'ct_{name}{qualifier}',
+    'DEFAULT_ROLE_NAME': 'rl_adapter',
+    'DEFAULT_DB_TABLE_PATTERN': 'tb_{table_name}',
+    'IGNORE_DB_TABLE_PATTERNS': [
+        '"{}"."{}"',
+        'django_migrations',
+    ],
+    'DEFAULT_OBJECT_NAME_PATTERNS': {
+        'SEQUENCE': 'sq_{table_name}',
+        'TRIGGER': 'tg_{table_name}_b',
+        'INDEX': 'ix_{name}',
+        'PRIMARY_KEY': 'cp_{name}',
+        'FOREIGN_KEY': 'ce_{name}',
+        'UNIQUE': 'ct_{name}_uq',
+        'CHECK': 'ct_{name}{qualifier}',
+    },
+    'SQL_FORMAT_OPTIONS': {
+        'unquote': True,
+        'identifier_case': 'upper',
+        'keyword_case': 'upper',
+    },
 }
 
 Based on similar settings structure from django-rest-framework:
@@ -23,43 +35,53 @@ from django.utils.module_loading import import_string
 # fmt: off
 DEFAULTS = {
     # Table naming patterns
-    'DEFAULT_DB_TABLE_FORMAT': '',
-    'IGNORE_DB_TABLE_FORMATS': [],
-    'ENABLE_DB_TABLE_NORMALIZATION': True,
+    'DEFAULT_DB_TABLE_PATTERN': '',
+    'IGNORE_DB_TABLE_PATTERNS': [],
+    'ENABLE_TRANSFORM_DB_TABLE': True,
 
-    # Other objects naming pattern
-    'DEFAULT_SEQUENCE_NAME': '{table}_sq',
-    'DEFAULT_TRIGGER_NAME': '{table}_tr',
-    'DEFAULT_INDEX_NAME': '{table}_{columns}_idx',
-    'DEFAULT_PRIMARY_KEY_NAME': '{table}_{columns}_pk',
-    'DEFAULT_FOREIGN_KEY_NAME': '{table}_{columns}_fk',
-    'DEFAULT_UNIQUE_NAME': '{table}_{columns}_uniq',
-    'DEFAULT_CHECK_NAME': '{table}_{columns}{qualifier}_check',
+    # Objects naming patterns
+    'DEFAULT_OBJECT_NAME_PATTERNS': {
+        'SEQUENCE': '{table}_sq',
+        'TRIGGER': '{table}_tr',
+        'INDEX': '{table}_{columns}_idx',
+        'PRIMARY_KEY': '{table}_{columns}_pk',
+        'FOREIGN_KEY': '{table}_{columns}_fk',
+        'UNIQUE': '{table}_{columns}_uniq',
+        'CHECK': '{table}_{columns}{qualifier}_check',
+    },
 
     # Grant options
     'DEFAULT_ROLE_NAME': '',
-
-    # Base policies
-    'DEFAULT_NAME_BUILDER_CLASS': 'db_adapter.name_builders.ObjectNameBuilder',
     'DEFAULT_OBJECT_PRIVILEGES': [
         'SELECT',
         'INSERT',
         'UPDATE',
         'DELETE',
     ],
+
+    # Base policies
+    'NAME_BUILDER_CLASS': 'db_adapter.name_builders.ObjectNameBuilder',
+
+    # SQL statements pattern
     'SQL_FORMAT_OPTIONS': {
         'unquote': False,
     },
+    'SQL_STATEMENTS_ORDER': [
+        'PRIMARY_KEY',
+        'UNIQUE',
+        'FOREIGN_KEY',
+        'CHECK',
+        'INDEX',
+        'COMMENT',
+        'CONTROL',
+        'AUTOINCREMENT',
+    ]
 }
 # fmt: on
 
-IMPORT_STRINGS = [
-    'DEFAULT_NAME_BUILDER_CLASS',
-]
+IMPORT_STRINGS = ['NAME_BUILDER_CLASS']
 
-DICT_STRINGS = [
-    'SQL_FORMAT_OPTIONS',
-]
+DICT_STRINGS = ['SQL_FORMAT_OPTIONS']
 
 
 def perform_import(val, setting_name):

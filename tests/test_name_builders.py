@@ -1,27 +1,26 @@
 from django.test import TestCase
 
 from db_adapter.name_builders import ObjectNameBuilder
-from db_adapter.settings import DatabaseAdapterSettings
 
 from .models import Post, TwitterPost
 
 
+class TestObjectNameBuilder(ObjectNameBuilder):
+    default_db_table_pattern = 'tbl_{table_name}'
+    default_object_name_patterns = {
+        'SEQUENCE': '{table}_seq',
+        'TRIGGER': 'tg_{table_name}_b',
+        'INDEX': '{columns}_idx',
+        'PRIMARY_KEY': 'pk_{name}',
+        'FOREIGN_KEY': 'fk_{name}',
+        'UNIQUE': 'ct_{table_name}_{columns}_uniq',
+        'CHECK': 'check{qualifier}',
+    }
+
+
 class ObjectNameBuilderTests(TestCase):
     def setUp(self):
-        settings = DatabaseAdapterSettings(
-            {
-                'DEFAULT_DB_TABLE_FORMAT': 'tbl_{table_name}',
-                'DEFAULT_SEQUENCE_NAME': '{table}_seq',
-                'DEFAULT_TRIGGER_NAME': 'tg_{table_name}_b',
-                'DEFAULT_INDEX_NAME': '{columns}_idx',
-                'DEFAULT_PRIMARY_KEY_NAME': 'pk_{name}',
-                'DEFAULT_FOREIGN_KEY_NAME': 'fk_{name}',
-                'DEFAULT_UNIQUE_NAME': 'ct_{table_name}_{columns}_uniq',
-                'DEFAULT_CHECK_NAME': 'check{qualifier}',
-            }
-        )
-
-        self.builder = ObjectNameBuilder(settings=settings)
+        self.builder = TestObjectNameBuilder()
         self.model = Post
         self.id_field = Post._meta.get_field('id')
         self.tag_field = Post._meta.get_field('tag')

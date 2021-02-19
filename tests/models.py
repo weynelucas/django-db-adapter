@@ -94,11 +94,18 @@ class Article(DBAdapterModel):
         db_index=True,
         db_column='tag',
     )
+    # Virtual fields
     liked_by = models.ManyToManyField(
         Person,
         related_name='liked_articles',
         through='tests.ArticleLike',
         through_fields=['article', 'person'],
+    )
+    post = models.ForeignObject(
+        Post,
+        on_delete=models.DO_NOTHING,
+        from_fields=['name'],
+        to_fields=['name'],
     )
 
     class Meta:

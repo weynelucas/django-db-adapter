@@ -70,6 +70,14 @@ END\
 '''
 
 
+class TestDatabaseOperationsFormatSql(TestDatabaseOperationsAutoincSql):
+    sql_format_options = {
+        'unquote': True,
+        'keyword_case': 'upper',
+        'identifier_case': 'upper',
+    }
+
+
 class TestDatabaseSchemaEditor(DatabaseSchemaEditor, BaseDatabaseSchemaEditor):
     pass
 
@@ -127,5 +135,10 @@ class TestDatabaseWrapperControlSql(TestDatabaseWrapper):
     ops_class = TestDatabaseOperationsControlSql
 
 
+class TestDatabaseWrapperFormatSql(TestDatabaseWrapper):
+    ops_class = TestDatabaseOperationsFormatSql
+
+
 test_connection = TestDatabaseWrapper({}, DEFAULT_DB_ALIAS)
 test_control_connection = TestDatabaseWrapperControlSql({}, DEFAULT_DB_ALIAS)
+test_format_connetion = TestDatabaseWrapperFormatSql({}, DEFAULT_DB_ALIAS)

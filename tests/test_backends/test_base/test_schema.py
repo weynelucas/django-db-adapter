@@ -1,11 +1,14 @@
 import json
+from unittest.mock import patch
 
+from django.db.backends.base.schema import BaseDatabaseSchemaEditor
 from django.test import TestCase
 
 from tests.connection import (
     TestDatabaseSchemaEditor,
     test_connection,
     test_control_connection,
+    test_format_connetion,
 )
 from tests.models import Article, Author, Post, Square, Tag
 
@@ -119,7 +122,7 @@ class SqlColumnTests(TestCase):
 
         column_sql = enforce_str_values(editor.deferred_column_sql)
         self.assertEqual(
-            column_sql['PRIMARY KEY'],
+            column_sql['PRIMARY_KEY'],
             [
                 'ALTER TABLE tbl_tag '
                 'ADD CONSTRAINT tbl_tag_name_pk '
@@ -146,7 +149,7 @@ class SqlColumnTests(TestCase):
 
         column_sql = enforce_str_values(editor.deferred_column_sql)
         self.assertEqual(
-            column_sql['FOREIGN KEY'],
+            column_sql['FOREIGN_KEY'],
             [
                 'ALTER TABLE tbl_post '
                 'ADD CONSTRAINT tbl_post_tag_fk '
@@ -222,7 +225,7 @@ class SqlColumnTests(TestCase):
         column_sql = enforce_str_values(editor.deferred_column_sql)
 
         self.assertEqual(
-            column_sql['SEQUENCE'],
+            column_sql['AUTOINCREMENT'],
             [
                 '''
 CREATE SEQUENCE tbl_article_sq
@@ -231,12 +234,7 @@ MAXVALUE 9999999999999999999
 START WITH 1
 INCREMENT BY 1
 CACHE 20\
-'''
-            ],
-        )
-        self.assertEqual(
-            column_sql['TRIGGER'],
-            [
+''',
                 '''
 CREATE OR REPLACE TRIGGER "tbl_article_tr"
 BEFORE INSERT ON tbl_article
@@ -246,7 +244,7 @@ WHEN (new.article_id IS NULL)
         SELECT "tbl_article_sq".nextval
         INTO :new.article_id FROM dual;
     END\
-'''
+''',
             ],
         )
 
@@ -415,3 +413,16 @@ WHEN (new.article_id IS NULL)
             grant_sequence_sql,
             'GRANT SELECT ON tbl_article_sq TO rl_tests;',
         )
+
+
+class BaseSchemaEditorTests(TestCase):
+    @patch.object(BaseDatabaseSchemaEditor, 'execute', retrun_value=None)
+    def test_super_execute_called_with_formatted_sql(self, mocked_execute):
+        editor = TestDatabaseSchemaEditor(
+            test_format_connetion, collect_sql=False
+        )
+        sql = 'create table "tbl_person" ("name" nvarchar(255))'
+        editor.execute(sql, params=())
+
+        formatted_sql = 'CREATE TABLE TBL_PERSON (NAME NVARCHAR(255))'
+        mocked_execute.assert_called_once_with(formatted_sql, ())

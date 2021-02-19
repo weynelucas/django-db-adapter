@@ -17,7 +17,7 @@ class DatabaseOperations:
 
     # Setting variables
     role_name = db_settings.DEFAULT_ROLE_NAME
-    name_builder_class = db_settings.DEFAULT_NAME_BUILDER_CLASS
+    name_builder_class = db_settings.NAME_BUILDER_CLASS
     default_object_privileges = db_settings.DEFAULT_OBJECT_PRIVILEGES
     sql_format_options = db_settings.SQL_FORMAT_OPTIONS
 

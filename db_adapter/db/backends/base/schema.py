@@ -2,7 +2,6 @@ import logging
 from typing import Tuple
 
 from django.db.models import Field, Model
-from django.db.transaction import TransactionManagementError
 
 from db_adapter.settings import db_settings
 from db_adapter.utils import enforce_model, enforce_model_fields
@@ -17,18 +16,6 @@ class DatabaseSchemaEditor:
     renaming, index fiddling, and so on.
     """
 
-    deferred_sql_order = (
-        'PRIMARY KEY',
-        'UNIQUE',
-        'FOREIGN KEY',
-        'CHECK',
-        'INDEX',
-        'COMMENT',
-        'CONTROL',
-        'SEQUENCE',
-        'TRIGGER',
-    )
-
     # Overrideable SQL templates
     sql_comment_on_column = (
         "COMMENT ON COLUMN %(table)s.%(column)s IS '%(comment)s'"
@@ -40,15 +27,16 @@ class DatabaseSchemaEditor:
 
     # Mapping of index name suffix to their database object types
     suffix_object_types = {
-        '_check': 'check',
-        '_pk': 'primary_key',
-        '_fk': 'foreign_key',
-        '_uniq': 'unique',
-        '_idx': 'index',
+        '_check': 'CHECK',
+        '_pk': 'PRIMARY_KEY',
+        '_fk': 'FOREIGN_KEY',
+        '_uniq': 'UNIQUE',
+        '_idx': 'INDEX',
     }
 
     # Setting variables
-    name_builder_class = db_settings.DEFAULT_NAME_BUILDER_CLASS
+    name_builder_class = db_settings.NAME_BUILDER_CLASS
+    deferred_sql_order = db_settings.SQL_STATEMENTS_ORDER
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -61,24 +49,6 @@ class DatabaseSchemaEditor:
     def execute(self, sql, params=()):
         sql = self.connection.ops.format_sql(sql)
 
-        """Execute the given SQL statement, with optional parameters."""
-        # Don't perform the transactional DDL check if SQL is being collected
-        # as it's not going to be executed anyway.
-        if (
-            not self.collect_sql
-            and self.connection.in_atomic_block
-            and not self.connection.features.can_rollback_ddl
-        ):
-            raise TransactionManagementError(
-                "Executing DDL statements while in a transaction on databases "
-                "that can't perform a rollback is prohibited."
-            )
-        # Account for non-string statement objects.
-        sql = str(sql)
-        # Log the command we're running, then run it
-        logger.debug(
-            "%s; (params %r)", sql, params, extra={'params': params, 'sql': sql}
-        )
         if self.collect_sql:
             ending = '' if sql.endswith(self.sql_ending) else self.sql_ending
             if params is not None:
@@ -88,8 +58,7 @@ class DatabaseSchemaEditor:
             else:
                 self.collected_sql.append(sql + ending)
         else:
-            with self.connection.cursor() as cursor:
-                cursor.execute(sql, params)
+            super().execute(sql, params)
 
     def column_sql(
         self, model: Model, field: Field, include_default=False
@@ -125,7 +94,7 @@ class DatabaseSchemaEditor:
 
         # Primary/unique keys
         if field.primary_key:
-            self.deferred_column_sql['PRIMARY KEY'].append(
+            self.deferred_column_sql['PRIMARY_KEY'].append(
                 self._create_primary_key_sql(model, field)
             )
         elif field.unique:
@@ -135,21 +104,19 @@ class DatabaseSchemaEditor:
 
         # FK
         if field.remote_field and field.db_constraint:
-            self.deferred_column_sql['FOREIGN KEY'].append(
+            self.deferred_column_sql['FOREIGN_KEY'].append(
                 self._create_fk_sql(
                     model, field, suffix='_fk_%(to_table)s_%(to_column)s'
                 )
             )
 
         # Autoincrement SQL (for backends with post table definition variant)
-        if field.get_internal_type() in ("AutoField", "BigAutoField"):
+        if field.get_internal_type() in ('AutoField', 'BigAutoField'):
             autoinc_sql = self.connection.ops.autoinc_sql(
                 model._meta.db_table, field.column
             )
             if autoinc_sql:
-                *sequence_sql, trigger_sql = autoinc_sql
-                self.deferred_column_sql['SEQUENCE'].extend(sequence_sql)
-                self.deferred_column_sql['TRIGGER'].append(trigger_sql)
+                self.deferred_column_sql['AUTOINCREMENT'].extend(autoinc_sql)
 
         # Comment columns for fields with help_text
         if field.help_text:

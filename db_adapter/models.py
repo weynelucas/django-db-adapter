@@ -4,23 +4,23 @@ from django.db.models.signals import class_prepared, pre_init
 from .utils import normalize_table
 
 
-def apply_db_table_normalization(sender: Model, **kwargs):
+def transform_db_table(sender: Model, **kwargs):
     from .settings import db_settings
 
-    should_normalize = (
-        db_settings.ENABLE_DB_TABLE_NORMALIZATION
-        and db_settings.DEFAULT_DB_TABLE_FORMAT
+    should_transform = (
+        db_settings.ENABLE_TRANSFORM_DB_TABLE
+        and db_settings.DEFAULT_DB_TABLE_PATTERN
     )
 
-    if should_normalize:
+    if should_transform:
         normalized_name = normalize_table(
             sender._meta.db_table,
-            format=db_settings.DEFAULT_DB_TABLE_FORMAT,
-            exclude=db_settings.IGNORE_DB_TABLE_FORMATS,
+            format=db_settings.DEFAULT_DB_TABLE_PATTERN,
+            exclude=db_settings.IGNORE_DB_TABLE_PATTERNS,
         )
 
         sender._meta.db_table = normalized_name
 
 
-pre_init.connect(apply_db_table_normalization)
-class_prepared.connect(apply_db_table_normalization)
+pre_init.connect(transform_db_table)
+class_prepared.connect(transform_db_table)
