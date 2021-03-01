@@ -10,6 +10,17 @@
 A flexible toolkit for customize how Django creates the databse objects for the
 application schema
 
+# Overview
+Django DB adapter is a flexible schema editor backend built to solve the following problems:
+
+- Generate SQL statements for projects working on database-first approach
+- All objects created (including created from Django) must have a particular name pattern, like add prefixes and suffixes
+- All table columns should be commented
+- Inline constraints (primary/foreign keys, unique/check constraints and indexes) are not allowed
+- The database user of application is not the owner of the objects and has no privilege to create/alter/drop them (`python manage.py migrate` will not work for this user). All DDL statements generated should include a grant of manipulation privileges (select/insert/update/delete) on created objects for this user/role
+- The order of SQL statements matters
+
+
 # Requirements
 - Python (3.6, 3.7, 3.8, 3.9)
 - Django (1.11, 2.2)
@@ -106,7 +117,6 @@ DB_ADAPTER = {
         'CONTROL', # Grant/revoke table privileges for specified role (if exists)
         'AUTOINCREMENT', # Sequence and triggers for auto-incremented fields
     ]
-
 }
 ```
 
