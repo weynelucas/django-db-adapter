@@ -1,5 +1,5 @@
 from django.apps import AppConfig
 
 
-class DbEditorConfig(AppConfig):
+class DatabaseAdapterConfig(AppConfig):
     name = 'db_adapter'
