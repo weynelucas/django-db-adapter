@@ -10,7 +10,7 @@ from tests.connection import (
     test_control_connection,
     test_format_connetion,
 )
-from tests.models import Article, Author, Post, Square, Tag
+from tests.models import Article, Author, Person, Post, Square, Tag
 
 
 def enforce_str_values(data: dict) -> dict:
@@ -211,6 +211,24 @@ class SqlColumnTests(TestCase):
             [
                 'COMMENT ON COLUMN tbl_tag.description '
                 "IS 'Optional description for tag'"
+            ],
+        )
+
+    def test_column_sql_escape_single_quote(self):
+        editor = TestDatabaseSchemaEditor(test_connection)
+
+        model = Person
+        field = Person._meta.get_field('last_name')
+        sql, _ = editor.column_sql(model, field)
+
+        self.assertEqual(str(sql), 'NVARCHAR2(30)')
+
+        column_sql = enforce_str_values(editor.deferred_column_sql)
+        self.assertEqual(
+            column_sql['COMMENT'],
+            [
+                'COMMENT ON COLUMN tbl_person.last_name '
+                "IS 'It''s your last name'"
             ],
         )
 
