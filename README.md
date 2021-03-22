@@ -1,10 +1,11 @@
 # Django DB adapter
 
-[![Build](https://github.com/weynelucas/django-db-adapter/workflows/Build/badge.svg)](https://github.com/weynelucas/django-db-adapter/actions)
+[![Test](https://github.com/weynelucas/django-db-adapter/actions/workflows/test.yml/badge.svg)](https://github.com/weynelucas/django-db-adapter/actions/workflows/test.yml)
+[![Package](https://github.com/weynelucas/django-db-adapter/actions/workflows/deploy.yml/badge.svg)](https://github.com/weynelucas/django-db-adapter/actions/workflows/deploy.yml)
 [![codecov](https://codecov.io/gh/weynelucas/django-db-adapter/branch/master/graph/badge.svg?token=EZyTLmsPhm)](https://codecov.io/gh/weynelucas/django-db-adapter)
 [![PyPI - Release](https://img.shields.io/pypi/v/django-db-adapter.svg)](https://pypi.python.org/pypi/django-db-adapter)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/django-db-adapter)](https://pypi.python.org/pypi/django-db-adapter)
-[![PyPI - Django Version](https://img.shields.io/pypi/djversions/django-db-adapters)](https://pypi.python.org/pypi/django-db-adapter)
+[![PyPI - Django Version](https://img.shields.io/pypi/djversions/django-db-adapter)](https://pypi.python.org/pypi/django-db-adapter)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 A flexible toolkit for customize how Django creates the databse objects for the
@@ -56,7 +57,7 @@ from django.db import models
 
 class Person(models.Model):
     first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
+    last_name = models.CharField(max_length=30, help_text="It's your last name")
 
     class Meta:
         db_table = 'person'
@@ -150,6 +151,10 @@ alter table example.tb_person
     check (last_name is not null);
 /
 
+comment on column example.tb_person.last_name
+    is 'It''s your last name';
+/
+
 grant select, insert, update, delete
     on example.tb_person
     to rl_example;
@@ -181,7 +186,8 @@ when (new.id is null)
 
 # Release notes
 
-- `v1.0.0` - 16/04/2018 - First release
-- `v1.0.1` - 16/04/2018 - Rename package and fix setup issues
-- `v1.0.2` - 17/04/2018 - Fix documentation preview
-- `v2.0.0` - 01/03/2021 - Recreate the entire schema editor backend with more flexible features
+- `v1.0.0` - Apr 16, 2018 - First release
+- `v1.0.1` - Apr 16, 2018 - Rename package and fix setup issues
+- `v1.0.2` - Apr 17, 2018 - Fix documentation preview
+- `v2.0.0` - Mar 1, 2021 - Recreate the entire schema editor backend with more flexible features
+- `v2.0.1` - Mar 22, 2021 - Escape single quotes on column comments

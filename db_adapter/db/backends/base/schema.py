@@ -221,7 +221,7 @@ class DatabaseSchemaEditor:
         return self.sql_comment_on_column % dict(
             table=self.quote_name(model._meta.db_table),
             column=self.quote_name(field.column),
-            comment=field.help_text,
+            comment=field.help_text.replace("'", "''"),
         )
 
     def _create_index_sql(self, model, fields, suffix='_idx', **kwargs):
