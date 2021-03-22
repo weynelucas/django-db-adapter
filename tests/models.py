@@ -29,7 +29,7 @@ class Author(DBAdapterModel):
 
 class Person(DBAdapterModel):
     first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
+    last_name = models.CharField(max_length=30, help_text="It's your last name")
 
     class Meta:
         db_table = 'tbl_person'
