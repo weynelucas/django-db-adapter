@@ -6,7 +6,9 @@
 [![PyPI - Release](https://img.shields.io/pypi/v/django-db-adapter.svg)](https://pypi.python.org/pypi/django-db-adapter)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/django-db-adapter)](https://pypi.python.org/pypi/django-db-adapter)
 [![PyPI - Django Version](https://img.shields.io/pypi/djversions/django-db-adapter)](https://pypi.python.org/pypi/django-db-adapter)
+[![Downloads](https://pepy.tech/badge/django-db-adapter)](https://pepy.tech/project/django-db-adapter)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 
 A flexible toolkit for customize how Django creates the databse objects for the
 application schema
